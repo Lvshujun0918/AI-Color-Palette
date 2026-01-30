@@ -153,7 +153,10 @@ func GenerateColorPalette(prompt string) ([]string, error) {
 
 	choice := chatResp.Choices[0]
 	message := choice.Message
-
+	if message.Role != "assistant" {
+		return nil, fmt.Errorf("unexpected message role: %s", message.Role)
+	}
+	log.Printf("[INFO] AI returns messages: %s", message.Content)
 	if len(message.ToolCalls) > 0 {
 		for _, call := range message.ToolCalls {
 			if call.Function.Name != paletteToolName {
