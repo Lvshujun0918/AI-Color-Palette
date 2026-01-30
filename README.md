@@ -1,167 +1,317 @@
 # 🎨 AI配色生成器
 
-一个前后端分离的Web应用，使用AI生成完美的配色方案，并提供对比度检查和色盲模拟功能。
+一个集成真实AI的Web应用，使用自然语言生成完美配色方案。前端本地处理对比度检查和色盲模拟，支持Docker单容器部署。
 
-## 📋 项目功能
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Go](https://img.shields.io/badge/go-1.25+-blue.svg)
+![Vue](https://img.shields.io/badge/Vue-3.3+-green.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 
-### 核心功能
-- **AI配色生成**: 输入自然语言提示词，生成5种相协调的配色方案
-- **配色方案历史**: 自动保存生成的配色方案，可快速恢复使用
-- **颜色导出**: 支持CSS变量、JSON和PNG图片格式导出
+## ✨ 核心功能
 
-### 检查工具
-- **对比度检查**: WCAG标准的无障碍对比度分析（AA/AAA级别）
-- **色盲模拟检查**: 
-  - 红绿色盲 (Deuteranopia)
-  - 红绿色弱 (Protanopia)
-  - 蓝黄色盲 (Tritanopia)
-  ### 对比度与色盲检查
-  对比度检查与色盲模拟已迁移到前端本地计算，不再提供后端API接口。
+### 🤖 AI配色生成
+- **广泛适配大预言模型**：集成 OpenAI/Claude/通义千问/DeepSeek 等多家AI服务
+- **自然语言输入**：输入配色需求描述，AI自动生成5个协调配色
+- **智能降级**：AI失败时自动降级到随机生成，确保服务可用性
+- **快速模板**：8个预设配色主题，秒速生成
 
-# 运行服务器
-go run main.go
+### 🎨 配色工具
+- **对比度检查**：WCAG 2.0标准检查（本地计算）
+  - 实时对比度比率计算
+  - AA/AAA等级评分
+  - 0-100可访问性评分
+- **色盲模拟**：4种色盲模拟（本地矩阵变换）
+  - Deuteranopia（红绿色盲）
+  - Protanopia（红绿色弱）
+  - Tritanopia（蓝黄色盲）
+  - Achromatopsia（完全色盲）
+- **颜色导出**：CSS变量 / JSON / PNG 三种格式
 
-# 服务器将在 http://localhost:8080 启动
+### 💾 历史管理
+- **本地保存**：自动本地保存历史记录
+- **自动备份**：生成新配色自动加入历史
+- **快速恢复**：一键加载历史配色方案
+- **最多20条**：自动删除超期记录
+
+### 📱 用户体验
+- **响应式设计**：桌面优先，适配平板和手机
+- **实时通知**：操作反馈通过 Toast 通知
+- **光滑动画**：卡片悬停和过渡效果
+
+## 🏗️ 技术栈
+
+### 后端
+```
+Go 1.25                    # 编程语言
+├── Gin                    # Web框架
+├── godotenv              # 环境变量管理
+└── OpenAI兼容API         # 真实AI调用
 ```
 
-### 前端启动
+### 前端
+```
+Vue 3.3                   # UI框架
+├── Vite 4.5             # 构建工具
+├── Axios                # HTTP客户端
+└── CSS3                 # 响应式设计 + 动画
+```
+
+### 基础设施
+```
+Nginx 1.29               # 反向代理 + 静态服务
+Supervisor              # 进程管理
+Docker 20.10+          # 容器化部署
+```
+
+## 🚀 快速开始
+
+### 方案1：Docker（推荐）
+
+#### 要求
+- Docker 20.10+
+
+#### 配置
+
+编辑 `backend/.env`：
+```env
+AI_API_KEY=sk-xxxxxxxxxxxx          # OpenAI或兼容API的密钥
+AI_API_BASE_URL=https://api.openai.com/v1
+AI_MODEL=gpt-3.5-turbo              # 模型名称
+AI_TIMEOUT=30                       # 请求超时（秒）
+```
+
+#### 运行
 
 ```bash
-# 在新的终端窗口中，进入前端目录
+# 构建镜像（前后端一体，单容器）
+docker build -t ai-color-palette .
+
+# 运行容器（同端口访问前后端）
+docker run -p 5173:80 --env-file backend/.env ai-color-palette
+
+# 访问应用
+open http://localhost:5173
+```
+
+### 方案2：本地开发
+
+#### 要求
+- Go 1.25+
+- Node.js 18+
+- npm/yarn
+
+#### 后端启动
+
+```bash
+cd backend
+
+# 复制环境变量
+cp .env.example .env
+# 编辑 .env，填入真实 AI_API_KEY
+
+# 安装依赖
+go mod download
+
+# 启动服务
+go run main.go
+# 后端运行在 http://localhost:8080
+```
+
+#### 前端启动
+
+```bash
 cd frontend
 
 # 安装依赖
 npm install
 
-# 启动开发服务器
+# 开发模式
 npm run dev
-
-# 应用将在 http://localhost:5173 启动
+# 应用运行在 http://localhost:5173
 ```
 
-## 🎯 API端点
+## 📚 API 文档
+
+### 健康检查
+**GET** `/api/health`
+
+```bash
+curl http://localhost:8080/api/health
+```
 
 ### 生成配色
 **POST** `/api/generate-palette`
 
-请求体:
-```json
-{
-  "prompt": "温暖的秋色调"
-}
+请求：
+```bash
+curl -X POST http://localhost:8080/api/generate-palette \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "温暖的秋日色调"}'
 ```
 
-响应:
+响应：
 ```json
 {
   "colors": ["#D97706", "#F59E0B", "#FBBF24", "#FCD34D", "#FEF3C7"],
-  "prompt": "温暖的秋色调",
-  "timestamp": 1234567890,
+  "timestamp": 1704067200,
   "description": "根据提示词生成的配色方案"
 }
 ```
 
-### 对比度与色盲检查
-对比度检查与色盲模拟已迁移到前端本地计算，不再提供后端API接口。
+## 🔧 环境变量配置
 
-### 获取历史记录
+支持多家AI服务提供商，通过 `AI_API_BASE_URL` 和 `AI_MODEL` 切换。
 
-历史记录现已保存在浏览器 localStorage 中，不再通过 API 获取。
-
-浏览器存储的数据格式:
-```json
-[
-  {
-    "id": 1234567890,
-    "prompt": "温暖的秋色调",
-    "colors": ["#FF6B6B", "#FFA500", "#FFD93D", "#6BCB77", "#4D96FF"],
-    "timestamp": 1234567890
-  }
-]
+### OpenAI
+```env
+AI_API_KEY=sk-xxxxx
+AI_API_BASE_URL=https://api.openai.com/v1
+AI_MODEL=gpt-3.5-turbo
 ```
 
-存储键: `ai_color_palette_history`
-最大记录数: 20 条
-
-## 💡 功能说明
-
-### 生成配色
-1. 在文本框中输入配色描述 (如 "温暖的秋色调")
-2. 点击 "✨ 生成配色" 按钮
-3. 等待后端返回配色方案
-4. 新配色自动保存到历史记录
-
-### 导出配色
-- **导出CSS**: 生成CSS变量 (--color-1, --color-2, 等)
-- **导出JSON**: 包含提示词、颜色和时间戳
-- **导出图片**: PNG格式的配色预览
-
-### 对比度检查
-1. 切换到 "检查工具" Tab
-2. 从配色中选择两个颜色
-3. 点击 "检查对比度"
-4. 查看对比度比率和WCAG等级
-
-**WCAG标准**:
-- **AAA**: 对比度 7:1+ (推荐)
-- **AA**: 对比度 4.5:1+ (最低要求)
-- **FAIL**: 对比度 < 4.5:1 (不符合标准)
-
-### 色盲检查
-1. 点击 "检查色盲友好性"
-2. 查看配色在不同色盲类型下的效果
-3. 查看改进建议
-
-## 🔄 AI调用流程
-
-当前使用**模拟方式**生成配色:
-```
-用户输入 → 后端接收 → 伪随机生成颜色 → 返回5种颜色
+### Anthropic Claude
+```env
+AI_API_KEY=sk-ant-xxxxx
+AI_API_BASE_URL=https://api.anthropic.com
+AI_MODEL=claude-3-sonnet
 ```
 
-后续升级可以集成:
-- OpenAI GPT API
-- Anthropic Claude API
-- 本地AI模型 (LLaMA, etc.)
+### 通义千问
+```env
+AI_API_KEY=sk-xxxxx
+AI_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+AI_MODEL=qwen-turbo
+```
 
-## 📱 响应式设计
+### DeepSeek
+```env
+AI_API_KEY=sk-xxxxx
+AI_API_BASE_URL=https://api.deepseek.com/v1
+AI_MODEL=deepseek-chat
+```
 
-- **桌面端 (>1024px)**: 左右双栏布局，充分利用屏幕空间
-- **平板端 (768px-1024px)**: 上下分栏，自适应调整
-- **手机端 (<768px)**: 单栏垂直布局，优化触屏交互
+### 智谱 AI
+```env
+AI_API_KEY=xxxxx
+AI_API_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+AI_MODEL=glm-4
+```
 
-## 🎨 配色方案
 
-应用本身的配色:
-- 主色: `#667eea` (Periwinkle Blue)
-- 辅助色: `#764ba2` (Deep Purple)
-- 渐变背景: `135deg` 从蓝色到紫色
+## 📦 项目结构
 
-## 🔐 跨域配置
+```
+ai-color-palette/
+├── Dockerfile                    # 单容器前后端一体构建
+├── supervisor.conf               # Supervisor 进程管理配置
+├── .env                         # 环境变量（Git忽略）
+├── .gitignore
+├── backend/
+│   ├── main.go                  # 入口点
+│   ├── go.mod / go.sum         # Go依赖
+│   ├── .env.example             # 环境变量模板
+│   ├── config/
+│   │   └── config.go            # 配置加载器
+│   ├── ai/
+│   │   └── client.go            # AI API客户端
+│   ├── handler/
+│   │   └── palette.go           # 配色生成处理器
+│   └── .dockerignore
+├── frontend/
+│   ├── package.json             # npm依赖
+│   ├── vite.config.js          # Vite配置
+│   ├── nginx.conf               # Nginx反向代理配置
+│   ├── .dockerignore
+│   ├── dist/                    # 生产构建输出
+│   └── src/
+│       ├── App.vue              # 主组件
+│       ├── components/          # 组件库
+│       │   ├── ColorDisplay.vue
+│       │   ├── ColorExport.vue
+│       │   ├── ContrastCheck.vue
+│       │   ├── ColorBlindCheck.vue
+│       │   └── History.vue
+│       └── utils/
+│           ├── api.js           # Axios配置
+│           └── colorUtils.js    # 颜色算法库
+└── AI_INTEGRATION.md             # AI集成详解文档
+```
 
-后端CORS配置允许以下源:
-- `http://localhost:5173` (开发)
-- `http://localhost:3000` (备选)
-- `*` (生产需要调整)
+## 🎯 常见问题
 
-## 📝 后续开发计划
+### ❓ AI生成失败怎么办？
 
-- [ ] 集成真实AI API (OpenAI/Claude)
-- [ ] 用户认证和账户系统
-- [ ] 配色收藏功能
-- [ ] 社区分享配色方案
-- [ ] 更多配色算法支持
-- [ ] 暗色模式支持
-- [ ] PWA离线支持
+系统会自动降级到随机生成。检查以下项：
+- `backend/.env` 中 `AI_API_KEY` 是否配置
+- 网络连接是否正常
+- API额度是否充足
+- `AI_API_BASE_URL` 是否正确
+
+查看后端日志获取详细错误信息。
+
+### ❓ 对比度检查在前端还是后端？
+
+✅ **完全在前端本地计算**，无需网络请求，响应快，隐私更好。
+
+使用 WCAG 2.0 标准算法：
+- 先将 RGB 转换为 sRGB 线性值
+- 计算相对亮度
+- 计算对比度比率
+
+### ❓ 历史记录在哪里？
+
+保存在浏览器 **localStorage** 中，键值为 `ai_color_palette_history`，最多20条记录。
+
+- 刷新页面自动恢复
+- 清除浏览器缓存会丢失
+- 支持跨标签页共享（同源）
+
+### ❓ 如何部署到生产？
+
+Docker 方式（推荐）：
+```bash
+# 构建镜像
+docker build -t ai-color-palette:v1.0 .
+
+# 运行容器，暴露到80端口
+docker run -d -p 80:80 \
+  --env-file backend/.env \
+  --name ai-palette \
+  ai-color-palette:v1.0
+
+# 访问应用
+curl http://localhost
+```
+
+K8s 部署：
+```bash
+# 将 docker run 转换为 Pod 资源
+docker to kubernetes using kompose
+```
+
+### ❓ 如何限制历史记录大小？
+
+修改 `frontend/src/App.vue`：
+```javascript
+// 第138行，修改最大记录数
+const MAX_HISTORY = 30  // 改为你需要的数量
+```
+
+### ❓ 支持离线使用吗？
+
+可以，使用本地AI模型：
+1. 安装 [Ollama](https://ollama.ai)
+2. 拉取模型：`ollama pull mistral`
+3. 配置 `.env`：
+   ```env
+   AI_API_BASE_URL=http://localhost:11434/v1
+   AI_MODEL=mistral
+   ```
 
 ## 📄 许可证
 
-MIT License
+MIT License - 详见 [LICENSE](./LICENSE) 文件
 
-## 👨‍💻 开发者
+## 🤝 贡献
 
-AI配色生成器开发团队
-
----
-
-**提示**: 目前AI调用采用模拟方式，后续将集成真实的AI服务以提供更强大的配色能力。
+欢迎提交 Issue 和 Pull Request！
