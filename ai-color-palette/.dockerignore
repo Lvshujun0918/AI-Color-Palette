@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/bin
+**/vendor
+**/.env
+**/*.exe
+**/.vscode
+**/.idea
+**/*.log
+.git
+docker-compose.yml
