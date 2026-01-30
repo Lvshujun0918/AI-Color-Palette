@@ -20,7 +20,7 @@ var AppConfig *Config
 func LoadConfig() {
 	// 加载.env文件
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not found, using environment variables")
+		log.Println("[WARNING] .env file not found, using environment variables")
 	}
 
 	timeout := 30
@@ -38,7 +38,7 @@ func LoadConfig() {
 	}
 
 	if AppConfig.AIAPIKey == "" {
-		log.Println("Warning: AI_API_KEY not set, AI generation may fail")
+		log.Println("[ERROR] AI_API_KEY is not set in environment variables")
 	}
 }
 
@@ -46,5 +46,6 @@ func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+	log.Printf("[INFO] %s is not set in environment variables, using default value: %s", key, defaultValue)
 	return defaultValue
 }
