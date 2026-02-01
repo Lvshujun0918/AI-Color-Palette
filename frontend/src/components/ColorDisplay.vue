@@ -152,6 +152,7 @@ export default {
   flex: 1;
   gap: 15px;
   flex-shrink: 0;
+  flex-direction: column;
 }
 
 .color-card {
@@ -162,8 +163,10 @@ export default {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
-  flex-direction: column;
-  min-height: 200px;
+  height: 36px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .color-card:hover {
@@ -172,14 +175,12 @@ export default {
 }
 
 .color-preview {
-  flex:1;
-  width: 100%;
-  height: 100px;
-  border-radius: 8px 8px 0 0;
+  width: 108px;
+  height: 36px;
+  border-radius: 5px 0px 0px 5px;
 }
 
 .color-info {
-  margin-top: auto;
   padding: 10px;
   display: flex;
   justify-content: space-between;
