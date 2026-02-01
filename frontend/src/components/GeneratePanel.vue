@@ -90,16 +90,6 @@ export default {
   position: relative;
   z-index: 2;
   max-width: 800px;
-  width: 100%;
-  padding: 3.5rem 3.5rem;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px) saturate(180%);
-  -webkit-backdrop-filter: blur(10px) saturate(180%);
-  border-radius: 24px;
-  box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .input-section {
