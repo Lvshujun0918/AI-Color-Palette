@@ -132,20 +132,21 @@ export default {
 
 .generate-btn {
   padding: 14px 24px;
-  background: linear-gradient(135deg, #ff9900 0%, #ffe100 100%);
+  background: var(--glass-cta);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: var(--glass-cta-shadow);
 }
 
 .generate-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.35);
+  background: var(--glass-cta-hover);
 }
 
 .generate-btn:disabled {

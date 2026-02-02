@@ -29,9 +29,9 @@
 
     <!-- 快速操作 -->
     <div class="quick-actions">
-      <button class="action-btn glass-pill" @click="exportAsCSS">导出CSS</button>
-      <button class="action-btn glass-pill" @click="exportAsJSON">导出JSON</button>
-      <button class="action-btn glass-pill" @click="exportAsImage">导出图片</button>
+      <button class="action-btn cta-btn" @click="exportAsCSS">导出CSS</button>
+      <button class="action-btn cta-btn" @click="exportAsJSON">导出JSON</button>
+      <button class="action-btn cta-btn" @click="exportAsImage">导出图片</button>
     </div>
   </div>
 </template>
@@ -244,18 +244,24 @@ export default {
   flex: 1;
   min-width: 100px;
   padding: 10px 15px;
-  color: #1f2937;
+  color: #fff;
   border: none;
   border-radius: 999px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: background 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   white-space: nowrap;
 }
 
-.action-btn:hover {
-  background: rgba(255, 255, 255, 0.6);
+.cta-btn {
+  background: var(--glass-cta);
+  box-shadow: var(--glass-cta-shadow);
+}
+
+.cta-btn:hover {
+  background: var(--glass-cta-hover);
+  transform: translateY(-1px);
 }
 
 .action-btn:active {

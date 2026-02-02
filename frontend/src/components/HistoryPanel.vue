@@ -148,22 +148,25 @@ export default {
   margin-top: 4px;
 }
 
+
 .select-btn {
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.6);
-  color: #1f2937;
+  background: var(--glass-cta);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
-  transition: background 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   flex-shrink: 0;
+  box-shadow: var(--glass-cta-shadow);
 }
 
 .select-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--glass-cta-hover);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

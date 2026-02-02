@@ -310,19 +310,21 @@ export default {
 
 .check-btn {
   padding: 8px 16px;
-  background: #667eea;
+  background: var(--glass-cta);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 0.9rem;
-  font-weight: 500;
-  transition: background 0.3s;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   white-space: nowrap;
+  box-shadow: var(--glass-cta-shadow);
 }
 
 .check-btn:hover {
-  background: #764ba2;
+  background: var(--glass-cta-hover);
+  transform: translateY(-1px);
 }
 
 .divider {
