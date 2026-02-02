@@ -338,6 +338,9 @@ export default {
 .tab-content {
   flex: 1;
   overflow-y: auto;
+}
+
+.tab-content>div {
   padding: 20px;
 }
 

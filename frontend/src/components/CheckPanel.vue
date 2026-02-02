@@ -64,18 +64,15 @@
         </div>
       </div>
     </div>
-
-    <div class="divider"></div>
-
     <!-- 色盲检查 -->
     <div class="check-section">
-      <h3>🎨 色盲检查</h3>
+      <h3>色盲检查</h3>
       <button class="check-btn" @click="performColorblindCheck">检查色盲友好性</button>
 
       <!-- 色盲结果 -->
       <div v-if="colorblindResult" class="colorblind-result">
         <div class="colorblind-types">
-          <div v-for="type in colorblindTypes" :key="type.key" class="colorblind-type">
+          <div v-for="type in colorblindTypes" :key="type.key" class="glass-card colorblind-type">
             <h4>{{ type.name }}</h4>
             <div class="colorblind-colors">
               <div
@@ -89,7 +86,7 @@
           </div>
         </div>
 
-        <div class="accessibility-info">
+        <div class="accessibility-info glass-card">
           <div v-if="colorblindResult.isAccessible" class="success">
             ✅ 此配色方案对色盲友好
           </div>
@@ -329,12 +326,6 @@ export default {
   transform: translateY(-1px);
 }
 
-.divider {
-  height: 1px;
-  background: #e0e0e0;
-  margin: 10px 0;
-}
-
 .result-card {
   border-radius: 8px;
   padding: 15px;
@@ -421,9 +412,6 @@ export default {
 }
 
 .colorblind-type {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
   padding: 12px;
 }
 
@@ -449,9 +437,6 @@ export default {
 }
 
 .accessibility-info {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
   padding: 15px;
 }
 
