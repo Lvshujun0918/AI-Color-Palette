@@ -1,13 +1,15 @@
 <template>
   <div class="background-container" :style="{ background: currentBackground }">
     <div class="container glass-surface">
-      <div class="header glass-panel">
-        <div class="logo-container">
-          <img :src="logoUrl" alt="Logo" class="logo" @error="handleLogoError">
-        </div>
-        <div class="header-text">
-          <h1>PaletteFlow</h1>
-          <p>配色，易如反掌</p>
+      <div class="top-content">
+        <div class="header glass-panel">
+          <div class="logo-container">
+            <img :src="logoUrl" alt="Logo" class="logo" @error="handleLogoError">
+          </div>
+          <div class="header-text">
+            <h1>PaletteFlow</h1>
+            <p>配色，易如反掌</p>
+          </div>
         </div>
       </div>
 
@@ -235,43 +237,35 @@ export default {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  overflow: hidden;
   transform: scale(0.95);
   transform-origin: center center;
   position: relative;
   z-index: 1;
-  gap: 20px;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px) saturate(180%);
-  -webkit-backdrop-filter: blur(10px) saturate(180%);
   display: flex;
   color: rgb(80, 76, 76);
+  width: 100%;
+  height: 160px;
   padding: 20px;
-  /* 减少内边距，使更紧凑 */
   text-align: left;
-  /* 确保内部文本左对齐 */
   flex-shrink: 0;
   flex-direction: row;
   align-items: center;
-  /* 顶部对齐 */
 }
 
 .header-text {
   margin-left: 20px;
   text-align: left;
-  /* 改为左对齐 */
   flex: 1;
-  /* 占据剩余空间 */
 }
 
 .header h1 {
   font-size: 3.5rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  /* 减少底部边距，更紧凑 */
   color: #333333;
   font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 -1px 2px rgba(255, 255, 255, 0.3);
@@ -279,9 +273,7 @@ export default {
   letter-spacing: -0.5px;
   transition: color 0.4s ease, text-shadow 0.4s ease;
   text-align: left;
-  /* 确保左对齐 */
   line-height: 1.2;
-  /* 调整行高，更紧凑 */
 }
 
 .header p {
@@ -295,11 +287,18 @@ export default {
   /* 调整行高 */
 }
 
-.main-content {
-  flex: 1;
+.top-content {
   display: flex;
-  overflow: hidden;
   gap: 20px;
+  padding: 20px 20px 0px 20px;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .panel {
@@ -307,6 +306,7 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 

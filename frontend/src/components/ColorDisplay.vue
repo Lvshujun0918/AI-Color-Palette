@@ -145,6 +145,7 @@ export default {
   overflow-y: auto;
   padding: 20px;
   gap: 20px;
+  min-height: 0;
 }
 
 .color-cards {

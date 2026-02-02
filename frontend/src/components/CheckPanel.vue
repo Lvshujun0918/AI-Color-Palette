@@ -258,6 +258,7 @@ export default {
   gap: 20px;
   height: 100%;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .check-section {

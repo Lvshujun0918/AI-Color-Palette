@@ -95,14 +95,6 @@ body {
   border: 1px solid var(--glass-border);
 }
 
-.header {
-  background: linear-gradient(135deg, #252b47 0%, #5f2698 100%);
-  color: white;
-  padding: 30px 20px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 .header h1 {
   font-size: 2.5rem;
   margin-bottom: 10px;
@@ -112,12 +104,6 @@ body {
 .header p {
   font-size: 1rem;
   opacity: 0.9;
-}
-
-.main-content {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
 }
 
 /* 响应式设计 */

@@ -90,12 +90,12 @@ export default {
   position: relative;
   z-index: 2;
   max-width: 800px;
+  gap: 20px;
 }
 
 .input-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   flex: 1;
 }
 
@@ -103,6 +103,7 @@ export default {
   font-weight: 600;
   color: #333;
   font-size: 1rem;
+  margin-bottom: 5px;
 }
 
 .input-textarea {
