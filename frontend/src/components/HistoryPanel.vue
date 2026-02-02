@@ -102,6 +102,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 20px;
 }
 
 .history-item {
