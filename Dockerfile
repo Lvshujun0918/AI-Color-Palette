@@ -36,5 +36,5 @@ COPY frontend/nginx.conf /etc/nginx/http.d/default.conf
 # supervisor config
 COPY supervisor.conf /etc/supervisor.conf
 
-EXPOSE 80
+EXPOSE 7860
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor.conf"]
