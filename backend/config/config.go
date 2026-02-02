@@ -32,8 +32,8 @@ func LoadConfig() {
 
 	AppConfig = &Config{
 		AIAPIKey:     os.Getenv("AI_API_KEY"),
-		AIAPIBaseURL: getEnvOrDefault("AI_API_BASE_URL", "https://api.openai.com/v1"),
-		AIModel:      getEnvOrDefault("AI_MODEL", "gpt-3.5-turbo"),
+		AIAPIBaseURL: getEnvOrDefault("AI_API_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"),
+		AIModel:      getEnvOrDefault("AI_MODEL", "glm-4.7-flash"),
 		AITimeout:    timeout,
 	}
 
