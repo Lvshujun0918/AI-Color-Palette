@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import { notify } from '../utils/notify'
+
 export default {
   name: 'ColorDisplay',
   props: {
@@ -53,13 +55,12 @@ export default {
       default: 0
     }
   },
-  emits: ['copy', 'notify'],
   methods: {
     copyToClipboard(color) {
       navigator.clipboard.writeText(color).then(() => {
-        this.$emit('notify', `已复制: ${color}`)
+        notify(`已复制: ${color}`, 'success')
       }).catch(() => {
-        this.$emit('notify', '复制失败')
+        notify('复制失败', 'error')
       })
     },
     formatTime(timestamp) {

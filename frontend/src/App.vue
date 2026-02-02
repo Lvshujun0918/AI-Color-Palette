@@ -219,13 +219,17 @@ export default {
 
 /* 主内容容器 - 半透明Docker效果 */
 .main-content {
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 2;
   max-width: 800px;
   width: 90%;
-  padding: 5rem 3.5rem;
+  height: 60vh;
+  padding: 60px 60px 10px 60px;
   text-align: center;
   animation: float 6s ease-in-out infinite;
+  justify-content: space-between;
 }
 
 @keyframes float {
@@ -235,7 +239,6 @@ export default {
 
 /* Logo样式 */
 .logo-container {
-  margin-bottom: 3rem;
   animation: fadeInDown 1s ease;
   width: 110px;
   height: 110px;
@@ -271,7 +274,6 @@ export default {
 .main-title {
   font-size: 3.5rem;
   font-weight: 600;
-  margin: 0 0 0.8rem 0;
   color: #333333;
   font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 -1px 2px rgba(255, 255, 255, 0.3);
@@ -283,7 +285,6 @@ export default {
 .subtitle {
   font-size: 1.2rem;
   color: #a0a0a0;
-  margin-bottom: 5rem;
   animation: fadeInUp 1s ease 0.4s both;
   font-weight: 300;
   letter-spacing: 2px;
@@ -292,7 +293,6 @@ export default {
 
 /* 按钮样式 */
 .button-container {
-  margin: 5.5rem 0;
   animation: fadeInUp 1s ease 0.6s both;
 }
 
@@ -351,9 +351,6 @@ export default {
 
 /* 底部Slogan */
 .slogan-container {
-  margin-top: 7rem;
-  padding-top: 2.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
   animation: fadeIn 1.5s ease 0.8s both;
 }
 
@@ -439,112 +436,6 @@ export default {
   }
   to {
     opacity: 1;
-  }
-}
-
-/* 响应式设计 */
-@media (max-width: 1024px) {
-  .main-content {
-    margin: 2rem auto;
-    max-width: 90vw;
-  }
-  
-  .main-title {
-    font-size: 3rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .app-container {
-    min-height: auto;
-    padding: 2rem 0;
-  }
-  
-  .main-content {
-    margin: 1.5rem 1rem;
-    padding: 4rem 2.5rem;
-    margin-top: 5vh;
-  }
-  
-  .logo-container {
-    flex-shrink: 0;
-    aspect-ratio: 1 / 1;
-  }
-
-  .main-title {
-    font-size: 2.2rem;
-    margin-bottom: 1rem;
-  }
-
-  .subtitle {
-    font-size: 1rem;
-    margin-bottom: 3rem;
-    letter-spacing: 1px;
-  }
-  
-  .button-container {
-    margin: 3.5rem 0;
-  }
-
-  .enter-button {
-    padding: 0.95rem 2.5rem;
-    font-size: 0.95rem;
-  }
-  
-  .slogan {
-    font-size: 0.85rem;
-    letter-spacing: 2px;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-content {
-    margin: 1rem;
-    padding: 3rem 2rem;
-    border-radius: 16px;
-  }
-  
-  .logo-container {
-    flex-shrink: 0;
-    aspect-ratio: 1 / 1;
-  }
-  .logo {
-    width: 80px;
-    height: 80px;
-  }
-
-  .main-title {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .subtitle {
-    font-size: 0.9rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .button-container {
-    margin: 3rem 0;
-  }
-
-  .enter-button {
-    padding: 0.85rem 2rem;
-    font-size: 0.9rem;
-    gap: 0.5rem;
-  }
-
-  .button-icon {
-    font-size: 1.2rem;
-  }
-
-  .slogan {
-    font-size: 0.8rem;
-    letter-spacing: 1px;
-  }
-
-  .slogan-container {
-    margin-top: 4rem;
-    padding-top: 1.5rem;
   }
 }
 </style>

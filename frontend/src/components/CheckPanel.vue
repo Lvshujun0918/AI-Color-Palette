@@ -113,6 +113,7 @@
 
 <script>
 import { ref, watch } from 'vue'
+import { notify } from '../utils/notify'
 import {
   getContrastRatio,
   getContrastLevel,
@@ -185,7 +186,7 @@ export default {
 
     const performContrastCheck = async () => {
       if (!selectedColor1.value || !selectedColor2.value) {
-        alert('请选择两个颜色进行对比度检查')
+        notify('请选择两个颜色进行对比度检查', 'warning')
         return
       }
 
@@ -201,13 +202,13 @@ export default {
         }
       } catch (error) {
         console.error('对比度检查失败:', error)
-        alert('检查失败，请重试')
+        notify('检查失败，请重试', 'error')
       }
     }
 
     const performColorblindCheck = async () => {
       if (props.colors.length === 0) {
-        alert('请先生成配色方案')
+        notify('请先生成配色方案', 'warning')
         return
       }
 
@@ -234,7 +235,7 @@ export default {
         }
       } catch (error) {
         console.error('色盲检查失败:', error)
-        alert('检查失败，请重试')
+        notify('检查失败，请重试', 'error')
       }
     }
 

@@ -16,8 +16,7 @@
       <div class="main-content">
         <!-- 左侧：配色显示面板 -->
         <div class="panel panel-left glass-panel">
-          <ColorDisplay :colors="currentColors" :prompt="currentPrompt" :timestamp="currentTimestamp"
-            @notify="showNotification" />
+          <ColorDisplay :colors="currentColors" :prompt="currentPrompt" :timestamp="currentTimestamp" />
         </div>
 
         <!-- 右侧：功能面板 -->
@@ -46,7 +45,7 @@
       </div>
 
       <!-- 通知 -->
-      <Notification v-if="notification.show" :message="notification.message" :type="notification.type" />
+      <Notification />
     </div>
   </div>
 </template>
@@ -59,6 +58,7 @@ import CheckPanel from '../components/CheckPanel.vue'
 import HistoryPanel from '../components/HistoryPanel.vue'
 import Notification from '../components/Notification.vue'
 import { generatePalette, healthCheck } from '../utils/api'
+import { notify } from '../utils/notify'
 import logo from '../assets/logo.png'
 
 const STORAGE_KEY = 'ai_color_palette_history'
@@ -92,7 +92,6 @@ export default {
     const currentPrompt = ref('默认配色方案')
     const currentTimestamp = ref(Date.now())
     const histories = ref([])
-    const notification = ref({ show: false, message: '', type: 'success' })
 
     // 计算属性：动态背景
     const currentBackground = computed(() => {
@@ -151,10 +150,10 @@ export default {
         // 保存到localStorage
         saveHistoriesToStorage()
 
-        showNotification('配色生成成功！', 'success')
+        notify('配色生成成功！', 'success')
       } catch (error) {
         console.error('生成配色失败:', error)
-        showNotification('生成配色失败，请重试', 'error')
+        notify('生成配色失败，请重试', 'error')
       } finally {
         loading.value = false
       }
@@ -165,34 +164,27 @@ export default {
       currentPrompt.value = item.prompt
       currentTimestamp.value = item.timestamp * 1000
       activeTab.value = 'generate'
-      showNotification('已加载历史配色', 'success')
+      notify('已加载历史配色', 'success')
     }
 
     const handleCheckContrast = () => {
       activeTab.value = 'check'
-      showNotification('已切换到对比度检查', 'info')
+      notify('已切换到对比度检查', 'info')
     }
 
     const handleCheckColorblind = () => {
       activeTab.value = 'check'
-      showNotification('已切换到色盲检查', 'info')
-    }
-
-    const showNotification = (message, type = 'success') => {
-      notification.value = { show: true, message, type }
-      setTimeout(() => {
-        notification.value.show = false
-      }, 3000)
+      notify('已切换到色盲检查', 'info')
     }
 
     onMounted(async () => {
       // 健康检查
       try {
         await healthCheck()
-        showNotification('连接到服务器成功', 'success')
+        notify('连接到服务器成功', 'success')
       } catch (error) {
         console.error('服务器连接失败:', error)
-        showNotification('无法连接到服务器，请确保后端已启动', 'error')
+        notify('无法连接到服务器，请确保后端已启动', 'error')
       }
 
       // 从localStorage加载历史记录
@@ -208,12 +200,11 @@ export default {
       currentBackground,
       currentTimestamp,
       histories,
-      notification,
       handleGenerate,
       handleSelectHistory,
       handleCheckContrast,
       handleCheckColorblind,
-      showNotification
+      notify
     }
   }
 }
