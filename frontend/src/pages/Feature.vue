@@ -269,9 +269,7 @@ export default {
   color: #333333;
   font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 -1px 2px rgba(255, 255, 255, 0.3);
-  animation: fadeInUp 1s ease 0.2s both;
   letter-spacing: -0.5px;
-  transition: color 0.4s ease, text-shadow 0.4s ease;
   text-align: left;
   line-height: 1.2;
 }
@@ -354,9 +352,6 @@ export default {
 
 .logo-container {
   margin-bottom: 0;
-  animation: fadeInDown 1s ease;
-  width: 110px;
-  height: 110px;
   flex-shrink: 0;
   aspect-ratio: 1 / 1;
   display: flex;
@@ -371,7 +366,6 @@ export default {
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .logo-container:hover {
@@ -396,6 +390,10 @@ export default {
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
+  .header {
+    height: 125px;
+  }
+
   .main-content {
     flex-direction: column;
   }
@@ -419,16 +417,13 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .header h1 {
-    font-size: 1.5rem;
-  }
-
   .header {
     padding: 20px 15px;
+    height: 100px;
   }
 
-  .header p {
-    font-size: 0.9rem;
+  .logo-container {
+    transform: scale(0.8);
   }
 
   .tab-content {
