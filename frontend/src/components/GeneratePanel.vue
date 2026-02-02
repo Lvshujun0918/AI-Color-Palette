@@ -159,8 +159,6 @@ export default {
 
 .template-btn {
   padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
