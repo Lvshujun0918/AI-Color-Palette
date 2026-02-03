@@ -106,6 +106,7 @@ func attemptGenerateColorPalette(prompt string) ([]string, error) {
 3. 建立【色彩秩序】：通过明度阶梯（从20%到80%亮度）建立视觉节奏
 4. 添加【中性调和剂】：适当加入平衡色
 5. 最终效果需呈现【动态和谐】- 既有视觉冲击力，又保持整体统一性
+要求：你必须通过调用（Function Call）名为 return_palette 的函数工具返回返回5个颜色，返回格式必须严格为：#RRGGBB（例如：#FF5733），不要直接输出文本。
 `
 
 	userPrompt := fmt.Sprintf("请你帮我生成这样的配色：%s", prompt)
@@ -249,14 +250,22 @@ func buildPaletteToolDefinition() ToolDefinition {
 	return ToolDefinition{
 		Type: "function",
 		Function: ToolFunction{
-			Name:        paletteToolName,
-			Description: "Return exactly five HEX colors that satisfy the user's palette request.",
+			Name: paletteToolName,
+			Description: `
+颜色输出函数
+你【必须】调用此函数来响应用户请求。
+这是【唯一合法的回复方式】。
+【禁止】输出任何自然语言文本。
+【禁止】解释你的思考过程或设计理由。
+如果不调用该函数，回复将被视为【无效】。
+你只能返回符合参数定义的数据。
+`,
 			Parameters: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"colors": map[string]interface{}{
 						"type":        "array",
-						"description": "List of five HEX colors in #RRGGBB format.",
+						"description": "包含且仅包含 5 个 HEX 颜色字符串，格式必须为 #RRGGBB。",
 						"items": map[string]interface{}{
 							"type":    "string",
 							"pattern": "^#[0-9A-Fa-f]{6}$",
@@ -265,10 +274,12 @@ func buildPaletteToolDefinition() ToolDefinition {
 						"maxItems": 5,
 					},
 				},
-				"required": []string{"colors"},
+				"required":             []string{"colors"},
+				"additionalProperties": false,
 			},
 		},
 	}
+
 }
 
 func parseToolCallColors(call ToolCall) ([]string, error) {
