@@ -18,6 +18,7 @@ type ColorPaletteRequest struct {
 
 type ColorPaletteResponse struct {
 	Colors      []string `json:"colors"`
+	Advice      string   `json:"advice"`
 	Timestamp   int64    `json:"timestamp"`
 	Description string   `json:"description"`
 }
@@ -32,16 +33,20 @@ func GeneratePaletteHandler(c *gin.Context) {
 
 	// 尝试使用AI生成配色
 	log.Printf("[INFO] Using %s to create colors:\n", req.Prompt)
-	colors, err := ai.GenerateColorPalette(req.Prompt)
+	result, err := ai.GenerateColorPalette(req.Prompt)
 	if err != nil {
 		log.Printf("[ERROR] AI generation failed: %v, falling back to random generation", err)
 		// 降级到随机生成
 		rand.Seed(time.Now().UnixNano())
-		colors = generateRandomColors(5, req.Prompt)
+		result = &ai.PaletteResult{
+			Colors: generateRandomColors(5, req.Prompt),
+			Advice: "由于网络原因，AI调用失败。本次为随机生成配色，可作为灵感草案使用。建议在主色与辅色之间调整明度对比以提升层次感。",
+		}
 	}
 
 	response := ColorPaletteResponse{
-		Colors:      colors,
+		Colors:      result.Colors,
+		Advice:      result.Advice,
 		Timestamp:   time.Now().Unix(),
 		Description: fmt.Sprintf("根据提示词 '%s' 生成的配色方案", req.Prompt),
 	}
