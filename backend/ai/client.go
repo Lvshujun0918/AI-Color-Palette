@@ -182,14 +182,6 @@ func attemptGenerateColorPalette(prompt string) ([]string, error) {
 		return nil, fmt.Errorf("tool call returned without expected palette data")
 	}
 
-	if message.Content != "" {
-		colors, ok := parseColorsFromContent(message.Content)
-		if ok {
-			log.Println("[INFO] AI returned colors in content, using parsed result")
-			return colors, nil
-		}
-	}
-
 	return nil, fmt.Errorf("AI Tool Call Failed: no tool_calls and no parsable colors in content")
 }
 
