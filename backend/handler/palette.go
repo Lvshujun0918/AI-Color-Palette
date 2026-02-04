@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"ai-color-palette/ai"
@@ -33,6 +34,18 @@ func GeneratePaletteHandler(c *gin.Context) {
 
 	// 尝试使用AI生成配色
 	log.Printf("[INFO] Using %s to create colors:\n", req.Prompt)
+	if strings.Contains(req.Prompt, "烧鸡") {
+		log.Printf("[INFO] Bingo~ %s\n", req.Prompt)
+		colors := []string{"#000000", "#FFFFFF", "#1E3A5F", "#2D5B8A", "#E5E5E5"}
+		response := ColorPaletteResponse{
+			Colors:      colors,
+			Advice:      "你找到了隐藏彩蛋~这是专属于作者烧鸡的配色方案，烧鸡yyds！",
+			Timestamp:   time.Now().Unix(),
+			Description: "你找到了隐藏彩蛋~这是专属于作者烧鸡的配色方案！",
+		}
+		c.JSON(http.StatusOK, response)
+		return
+	}
 	result, err := ai.GenerateColorPalette(req.Prompt)
 	if err != nil {
 		log.Printf("[ERROR] AI generation failed: %v, falling back to random generation", err)
