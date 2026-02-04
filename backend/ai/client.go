@@ -65,17 +65,22 @@ type ToolFunction struct {
 	Parameters  map[string]interface{} `json:"parameters"`
 }
 
+type PaletteResult struct {
+	Colors []string `json:"colors"`
+	Advice string   `json:"advice"`
+}
+
 // GenerateColorPalette 使用AI生成配色方案，支持3次重试
-func GenerateColorPalette(prompt string) ([]string, error) {
+func GenerateColorPalette(prompt string) (*PaletteResult, error) {
 	const maxRetries = 3
 	var lastErr error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		log.Printf("[INFO] Attempting to generate palette (attempt %d/%d)", attempt, maxRetries)
 
-		colors, err := attemptGenerateColorPalette(prompt)
+		result, err := attemptGenerateColorPalette(prompt)
 		if err == nil {
-			return colors, nil
+			return result, nil
 		}
 
 		lastErr = err
@@ -92,14 +97,15 @@ func GenerateColorPalette(prompt string) ([]string, error) {
 }
 
 // attemptGenerateColorPalette 单次尝试生成配色
-func attemptGenerateColorPalette(prompt string) ([]string, error) {
+func attemptGenerateColorPalette(prompt string) (*PaletteResult, error) {
 	cfg := config.AppConfig
 	if cfg.AIAPIKey == "" {
 		return nil, fmt.Errorf("AI API key not configured")
 	}
 
 	systemPrompt := `
-	你是一个专业的配色设计师。用户会给你一个配色需求描述，你需要返回5个精确的HEX颜色代码。
+	你是一个专业的配色设计师。用户会给你一个配色需求描述，你需要返回5个精确的HEX颜色代码，并给出配色使用建议。
+	你必须通过调用 return_palette 工具函数返回结果，不要输出任何自然语言文本。
 	1. 采用【渐变过渡技巧】，在冲突色之间创建中间色调缓冲层
 	2. 运用【色彩比例法则】：主色占60%，次色占30%，点缀色占10%
 	3. 建立【色彩秩序】：通过明度阶梯（从20%到80%亮度）建立视觉节奏
@@ -172,17 +178,25 @@ func attemptGenerateColorPalette(prompt string) ([]string, error) {
 			if call.Function.Name != paletteToolName {
 				continue
 			}
-			colors, err := parseToolCallColors(call)
+			result, err := parseToolCallResult(call)
 			if err != nil {
 				return nil, err
 			}
 			log.Println("[INFO] AI Tool Call Generated Successfully")
-			return colors, nil
+			return result, nil
 		}
 		return nil, fmt.Errorf("tool call returned without expected palette data")
 	}
 
-	return nil, fmt.Errorf("AI Tool Call Failed: no tool_calls and no parsable colors in content")
+	if message.Content != "" {
+		result, ok := parseResultFromContent(message.Content)
+		if ok {
+			log.Println("[INFO] AI returned result in content, using parsed result")
+			return result, nil
+		}
+	}
+
+	return nil, fmt.Errorf("AI Tool Call Failed: no tool_calls and no parsable result in content")
 }
 
 // extractColors 从AI响应中提取HEX颜色代码
@@ -204,19 +218,23 @@ func extractColors(text string) []string {
 	return colors
 }
 
-func parseColorsFromContent(content string) ([]string, bool) {
+func parseResultFromContent(content string) (*PaletteResult, bool) {
 	var payload struct {
 		Colors []string `json:"colors"`
+		Advice string   `json:"advice"`
 	}
 	if err := json.Unmarshal([]byte(content), &payload); err == nil {
 		if len(payload.Colors) == 5 {
-			return normalizeColors(payload.Colors)
+			normalized, ok := normalizeColors(payload.Colors)
+			if ok {
+				return &PaletteResult{Colors: normalized, Advice: strings.TrimSpace(payload.Advice)}, true
+			}
 		}
 	}
 
 	colors := extractColors(content)
 	if len(colors) >= 5 {
-		return colors[:5], true
+		return &PaletteResult{Colors: colors[:5]}, true
 	}
 	return nil, false
 }
@@ -263,8 +281,14 @@ func buildPaletteToolDefinition() ToolDefinition {
 						"minItems": 5,
 						"maxItems": 5,
 					},
+					"advice": map[string]interface{}{
+						"type":        "string",
+						"description": "配色使用建议，给出2-3条可执行的使用方式或场景。",
+						"minLength":   6,
+						"maxLength":   200,
+					},
 				},
-				"required":             []string{"colors"},
+				"required":             []string{"colors", "advice"},
 				"additionalProperties": false,
 			},
 		},
@@ -272,7 +296,7 @@ func buildPaletteToolDefinition() ToolDefinition {
 
 }
 
-func parseToolCallColors(call ToolCall) ([]string, error) {
+func parseToolCallResult(call ToolCall) (*PaletteResult, error) {
 	if strings.ToLower(call.Type) != "function" {
 		return nil, fmt.Errorf("unexpected tool call type: %s", call.Type)
 	}
@@ -282,6 +306,7 @@ func parseToolCallColors(call ToolCall) ([]string, error) {
 
 	var payload struct {
 		Colors []string `json:"colors"`
+		Advice string   `json:"advice"`
 	}
 
 	if err := json.Unmarshal([]byte(call.Function.Arguments), &payload); err != nil {
@@ -301,5 +326,5 @@ func parseToolCallColors(call ToolCall) ([]string, error) {
 		normalized = append(normalized, candidate)
 	}
 
-	return normalized, nil
+	return &PaletteResult{Colors: normalized, Advice: strings.TrimSpace(payload.Advice)}, nil
 }
