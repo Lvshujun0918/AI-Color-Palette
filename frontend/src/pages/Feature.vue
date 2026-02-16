@@ -164,7 +164,9 @@ import {
 import logo from '../assets/logo.png'
 
 const STORAGE_KEY = 'ai_color_palette_history'
+const CHAT_STORAGE_KEY = 'ai_color_palette_chat_history'
 const MAX_HISTORY = 20
+const MAX_CHAT_HISTORY = 200
 
 export default {
   name: 'App',
@@ -254,6 +256,33 @@ export default {
       }
     }
 
+    const loadChatMessagesFromStorage = () => {
+      try {
+        const stored = localStorage.getItem(CHAT_STORAGE_KEY)
+        if (!stored) return
+        const parsed = JSON.parse(stored)
+        if (!Array.isArray(parsed) || parsed.length === 0) return
+
+        const safeMessages = parsed.filter((item) => {
+          return item && typeof item === 'object' && item.role && item.type
+        })
+
+        if (safeMessages.length > 0) {
+          chatMessages.value = safeMessages
+        }
+      } catch (error) {
+        console.error('加载对话记录失败:', error)
+      }
+    }
+
+    const saveChatMessagesToStorage = () => {
+      try {
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages.value))
+      } catch (error) {
+        console.error('保存对话记录失败:', error)
+      }
+    }
+
     const addChatMessage = (role, type, content, payload = null) => {
       chatMessages.value.push({
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -262,6 +291,11 @@ export default {
         content,
         payload
       })
+
+      if (chatMessages.value.length > MAX_CHAT_HISTORY) {
+        chatMessages.value.splice(0, chatMessages.value.length - MAX_CHAT_HISTORY)
+      }
+      saveChatMessagesToStorage()
     }
 
     const clearSingleColorMode = () => {
@@ -566,6 +600,7 @@ export default {
 
       // 从localStorage加载历史记录
       loadHistoriesFromStorage()
+      loadChatMessagesFromStorage()
       if (currentColors.value && currentColors.value.length > 0) {
         selectedColor1.value = currentColors.value[0]
         selectedColor2.value = currentColors.value[1] || currentColors.value[0]
