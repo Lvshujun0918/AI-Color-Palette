@@ -82,8 +82,8 @@
 
             <div class="chat-actions">
               <div class="action-row">
-                <GlassButton class="chat-action" @click="handleShowHistory">查看历史</GlassButton>
-                <GlassButton class="chat-action" @click="handleRegenerate">不满意，重生成</GlassButton>
+                <GlassButton class="chat-action" @click="insertQuickInput('查看历史记录')">查看历史</GlassButton>
+                <GlassButton class="chat-action" @click="insertQuickInput('不满意，重新生成')">不满意，重生成</GlassButton>
               </div>
               <div class="action-row">
                 <div class="selector-group">
@@ -98,10 +98,10 @@
                     <option v-for="(color, index) in currentColors" :key="index" :value="color">{{ color }}</option>
                   </select>
                 </div>
-                <GlassButton class="chat-action" @click="handleContrastCheck">对比度检查</GlassButton>
+                <GlassButton class="chat-action" @click="insertQuickInput('对比度检查')">对比度检查</GlassButton>
               </div>
               <div class="action-row">
-                <GlassButton class="chat-action" @click="handleColorblindCheck">色盲检查</GlassButton>
+                <GlassButton class="chat-action" @click="insertQuickInput('色盲检查')">色盲检查</GlassButton>
               </div>
             </div>
 
@@ -314,11 +314,31 @@ export default {
       handleGenerate(newPrompt)
     }
 
+    const insertQuickInput = (text) => {
+      chatInput.value = text
+    }
+
     const handleSendPrompt = () => {
       const prompt = chatInput.value.trim()
       if (!prompt) return
       addChatMessage('user', 'text', prompt)
       chatInput.value = ''
+      if (prompt.includes('查看历史')) {
+        handleShowHistory()
+        return
+      }
+      if (prompt.includes('对比度检查')) {
+        handleContrastCheck()
+        return
+      }
+      if (prompt.includes('色盲检查')) {
+        handleColorblindCheck()
+        return
+      }
+      if (prompt.includes('不满意')) {
+        handleRegenerate()
+        return
+      }
       handleGenerate(prompt)
     }
 
@@ -433,6 +453,7 @@ export default {
       handleSelectHistory,
       handleRegenerate,
       handleSendPrompt,
+      insertQuickInput,
       handleShowHistory,
       handleContrastCheck,
       handleColorblindCheck,
