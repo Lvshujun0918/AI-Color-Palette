@@ -67,7 +67,6 @@
                         <div class="palette-text">{{ type.name }}</div>
                         <div class="palette-colors">
                           <span v-for="(color, index) in message.payload[type.key]" :key="index"
-                      clearSingleColorMode,
                             class="palette-chip" :style="{ backgroundColor: color }"></span>
                         </div>
                       </div>
@@ -142,6 +141,17 @@
 
       <!-- 通知 -->
       <Notification />
+
+      <div v-if="showSessionChoice" class="session-choice-overlay">
+        <div class="session-choice-card glass-panel">
+          <div class="session-choice-title">检测到上次对话</div>
+          <div class="session-choice-text">你希望继续保留历史对话，还是新建一轮对话？</div>
+          <div class="session-choice-actions">
+            <button class="session-btn secondary" @click="startNewConversation">新建对话</button>
+            <button class="session-btn primary" @click="restoreConversation">保留历史</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -167,6 +177,13 @@ const STORAGE_KEY = 'ai_color_palette_history'
 const CHAT_STORAGE_KEY = 'ai_color_palette_chat_history'
 const MAX_HISTORY = 20
 const MAX_CHAT_HISTORY = 200
+
+const createWelcomeMessage = () => ({
+  id: Date.now(),
+  role: 'assistant',
+  type: 'text',
+  content: '你好！我是“PaletteFlow”智能体。描述你的配色需求，我会生成配色并提供使用建议。'
+})
 
 export default {
   name: 'App',
@@ -194,14 +211,8 @@ export default {
     const currentAdvice = ref('')
     const histories = ref([])
     const chatInput = ref('')
-    const chatMessages = ref([
-      {
-        id: Date.now(),
-        role: 'assistant',
-        type: 'text',
-        content: '你好！我是“PaletteFlow”智能体。描述你的配色需求，我会生成配色并提供使用建议。'
-      }
-    ])
+    const chatMessages = ref([createWelcomeMessage()])
+    const showSessionChoice = ref(false)
     const selectedColor1 = ref('')
     const selectedColor2 = ref('')
     const singleColorHex = ref('')
@@ -275,6 +286,21 @@ export default {
       }
     }
 
+    const getStoredChatMessages = () => {
+      try {
+        const stored = localStorage.getItem(CHAT_STORAGE_KEY)
+        if (!stored) return []
+        const parsed = JSON.parse(stored)
+        if (!Array.isArray(parsed)) return []
+        return parsed.filter((item) => {
+          return item && typeof item === 'object' && item.role && item.type
+        })
+      } catch (error) {
+        console.error('读取对话记录失败:', error)
+        return []
+      }
+    }
+
     const saveChatMessagesToStorage = () => {
       try {
         localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages.value))
@@ -305,6 +331,29 @@ export default {
       singleColorIndex.value = 0
       singleColorBase.value = []
       chatInput.value = ''
+    }
+
+    const startNewConversation = () => {
+      clearSingleColorMode()
+      chatMessages.value = [createWelcomeMessage()]
+      saveChatMessagesToStorage()
+      // 重置当前的配色状态为默认值
+      currentColors.value = [
+        '#ffc2c2',
+        '#ffe0c2',
+        '#feffd6',
+        '#d9ffcc',
+        '#b9f9ff'
+      ]
+      currentPrompt.value = '默认配色方案'
+      currentTimestamp.value = Date.now()
+      currentAdvice.value = ''
+      showSessionChoice.value = false
+    }
+
+    const restoreConversation = () => {
+      loadChatMessagesFromStorage()
+      showSessionChoice.value = false
     }
 
     const formatTime = (timestamp) => {
@@ -600,7 +649,13 @@ export default {
 
       // 从localStorage加载历史记录
       loadHistoriesFromStorage()
-      loadChatMessagesFromStorage()
+      const storedChat = getStoredChatMessages()
+      // 只有当存在除欢迎语以外的历史消息时才询问是否恢复
+      if (storedChat.length > 1) {
+        showSessionChoice.value = true
+      } else {
+        startNewConversation()
+      }
       if (currentColors.value && currentColors.value.length > 0) {
         selectedColor1.value = currentColors.value[0]
         selectedColor2.value = currentColors.value[1] || currentColors.value[0]
@@ -609,7 +664,10 @@ export default {
 
     return {
       loading,
+      showSessionChoice,
       clearSingleColorMode,
+      startNewConversation,
+      restoreConversation,
       currentColors,
       currentPrompt,
       currentBackground,
@@ -744,6 +802,62 @@ export default {
   font-weight: 600;
   color: #2d3748;
   font-size: 1.1rem;
+}
+
+.session-choice-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+}
+
+.session-choice-card {
+  width: min(92vw, 460px);
+  padding: 22px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.session-choice-title {
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.session-choice-text {
+  color: #475569;
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.session-choice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.session-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.session-btn.secondary {
+  background: rgba(226, 232, 240, 0.9);
+  color: #334155;
+}
+
+.session-btn.primary {
+  background: rgba(37, 99, 235, 0.9);
+  color: #fff;
 }
 
 .chat-messages {
