@@ -13,6 +13,11 @@ export const generatePalette = (prompt) => {
   return apiClient.post('/generate-palette', { prompt })
 }
 
+// 单色微调：仅替换指定位置的颜色
+export const regenerateSingleColor = (payload) => {
+  return apiClient.post('/regenerate-color', payload)
+}
+
 // 健康检查
 export const healthCheck = () => {
   return apiClient.get('/health')

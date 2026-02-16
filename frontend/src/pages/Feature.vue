@@ -28,8 +28,9 @@
                     <div class="palette-summary">
                       <div class="palette-title">已生成配色</div>
                       <div class="palette-colors">
-                        <span v-for="(color, index) in message.payload.colors" :key="index" class="palette-chip"
-                          :style="{ backgroundColor: color }" :title="color"></span>
+                        <span v-for="(color, index) in message.payload.colors" :key="index" class="palette-chip clickable-chip"
+                          :style="{ backgroundColor: color }" :title="color"
+                          @click="handlePickColorFromChat(message.payload.colors, index)"></span>
                       </div>
                       <div class="palette-text">详细信息请查看右侧配色面板</div>
                     </div>
@@ -80,6 +81,10 @@
             </div>
 
             <div class="chat-input">
+              <div v-if="singleColorHex" class="selected-color-tip">
+                <span class="selected-color-dot" :style="{ backgroundColor: singleColorHex }"></span>
+                <span class="selected-color-text">已选颜色 {{ singleColorHex }} （已填入输入框，可直接修改提示词）</span>
+              </div>
               <textarea v-model="chatInput" class="input-textarea" placeholder="输入你的配色需求..."
                 @keydown.ctrl.enter="handleSendPrompt"></textarea>
               <div class="input-footer">
@@ -125,6 +130,22 @@
                 </div>
                 <div class="selector-hint">选择颜色后输入“对比度检查”</div>
               </div>
+              <div class="single-color-panel">
+                <div class="single-color-header">
+                  <div class="single-color-title">单色微调</div>
+                  <div v-if="singleColorHex" class="single-color-preview" :style="{ backgroundColor: singleColorHex }">
+                    {{ singleColorHex }}
+                  </div>
+                  <div v-else class="single-color-placeholder">从左侧点击颜色以选中</div>
+                </div>
+                <input v-model="singleColorPrompt" class="single-color-input"
+                  placeholder="针对选中颜色输入提示，例如：更亮一些、更科技感" />
+                <GlassButton class="single-color-btn" :loading="loadingSingle" :disabled="loadingSingle || !singleColorHex"
+                  @click="handleSingleColorRegenerate">
+                  <span v-if="!loadingSingle">单色重生成</span>
+                  <span v-else>生成中...</span>
+                </GlassButton>
+              </div>
             </div>
           </div>
         </div>
@@ -141,7 +162,7 @@ import { ref, onMounted, computed } from 'vue'
 import ColorDisplay from '../components/ColorDisplay.vue'
 import Notification from '../components/Notification.vue'
 import GlassButton from '../components/GlassButton.vue'
-import { generatePalette, healthCheck } from '../utils/api'
+import { generatePalette, healthCheck, regenerateSingleColor } from '../utils/api'
 import { notify } from '../utils/notify'
 import {
   getContrastRatio,
@@ -192,6 +213,12 @@ export default {
     ])
     const selectedColor1 = ref('')
     const selectedColor2 = ref('')
+    const singleColorHex = ref('')
+    const singleColorPrompt = ref('')
+    const singleColorIndex = ref(0)
+    const singleColorBase = ref([])
+    const loadingSingle = ref(false)
+    const singleColorMode = ref(false)
     const isQuickActionsOpen = ref(true)
     const colorblindTypes = [
       { key: 'deuteranopia', name: '红绿色盲 (Deuteranopia)' },
@@ -252,6 +279,23 @@ export default {
       if (!timestamp) return '未知'
       const date = new Date(timestamp)
       return date.toLocaleString('zh-CN')
+    }
+
+    const handlePickColorFromChat = (palette, index) => {
+      if (!palette || palette.length === 0) return
+      if (palette.length !== 5) {
+        notify('该配色数量不完整，暂不支持单色微调', 'warning')
+        return
+      }
+      singleColorBase.value = [...palette]
+      const target = palette[index]
+      singleColorHex.value = target
+      singleColorIndex.value = index
+      singleColorPrompt.value = `针对颜色 ${target} 重新设计一个替代色，保持整体风格一致`
+      chatInput.value = singleColorPrompt.value
+      singleColorMode.value = true
+      isQuickActionsOpen.value = true
+      notify(`已选中颜色 ${target}，提示词已填入左侧输入框，可编辑后在右侧执行单色重生成`, 'info')
     }
 
     const handleGenerate = async (prompt) => {
@@ -321,6 +365,71 @@ export default {
       handleGenerate(newPrompt)
     }
 
+    const handleSingleColorRegenerate = async () => {
+      if (!singleColorHex.value) {
+        notify('请先从左侧选择需要替换的颜色', 'warning')
+        return
+      }
+
+      const base = singleColorBase.value.length === currentColors.value.length
+        ? singleColorBase.value
+        : currentColors.value
+
+      if (!base || base.length !== 5) {
+        notify('当前配色数量异常，无法进行单色微调', 'error')
+        return
+      }
+
+      const targetIdx = typeof singleColorIndex.value === 'number'
+        ? singleColorIndex.value
+        : base.indexOf(singleColorHex.value)
+
+      if (targetIdx < 0 || targetIdx >= base.length) {
+        notify('未能确定需要替换的颜色位置', 'error')
+        return
+      }
+
+      loadingSingle.value = true
+      try {
+        const payload = {
+          prompt: singleColorPrompt.value || `为颜色 ${singleColorHex.value} 提供一个风格一致的替代色`,
+          base_colors: base,
+          target_index: targetIdx
+        }
+        const response = await regenerateSingleColor(payload)
+        currentColors.value = response.data.colors
+        currentPrompt.value = payload.prompt
+        currentTimestamp.value = response.data.timestamp * 1000
+        currentAdvice.value = response.data.advice || ''
+
+        const newHistory = {
+          id: Date.now(),
+          prompt: currentPrompt.value,
+          colors: response.data.colors,
+          timestamp: response.data.timestamp,
+          advice: response.data.advice || ''
+        }
+
+        histories.value.unshift(newHistory)
+        if (histories.value.length > MAX_HISTORY) {
+          histories.value.pop()
+        }
+        saveHistoriesToStorage()
+
+        addChatMessage('assistant', 'palette', '', {
+          colors: response.data.colors,
+          prompt: currentPrompt.value,
+          advice: response.data.advice || ''
+        })
+        notify('已重生成指定颜色并更新整套配色', 'success')
+      } catch (error) {
+        console.error('单色重生成失败:', error)
+        notify('单色重生成失败，请重试', 'error')
+      } finally {
+        loadingSingle.value = false
+      }
+    }
+
     const insertQuickInput = (text) => {
       chatInput.value = text
     }
@@ -332,6 +441,16 @@ export default {
     const handleSendPrompt = () => {
       const prompt = chatInput.value.trim()
       if (!prompt) return
+
+      // 如果处于单色模式，优先走单色重生成，不触发整套重生成
+      if (singleColorMode.value && singleColorHex.value) {
+        addChatMessage('user', 'text', prompt)
+        singleColorPrompt.value = prompt
+        chatInput.value = ''
+        handleSingleColorRegenerate()
+        return
+      }
+
       addChatMessage('user', 'text', prompt)
       chatInput.value = ''
       if (prompt.includes('查看历史')) {
@@ -459,12 +578,17 @@ export default {
       chatMessages,
       selectedColor1,
       selectedColor2,
+      singleColorHex,
+      singleColorPrompt,
+      loadingSingle,
       isQuickActionsOpen,
       colorblindTypes,
       handleGenerate,
       handleSelectHistory,
       handleRegenerate,
+      handleSingleColorRegenerate,
       handleSendPrompt,
+      handlePickColorFromChat,
       insertQuickInput,
       toggleQuickActions,
       handleShowHistory,
@@ -638,6 +762,16 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.clickable-chip {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clickable-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
 .palette-text {
   font-size: 0.88rem;
   color: #4a5568;
@@ -712,6 +846,57 @@ export default {
   border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.single-color-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+}
+
+.single-color-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.single-color-title {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.95rem;
+}
+
+.single-color-preview {
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: #1a202c;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  min-width: 100px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.single-color-placeholder {
+  font-size: 0.86rem;
+  color: #718096;
+}
+
+.single-color-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.single-color-btn {
+  align-self: flex-start;
+  min-width: 140px;
+}
+
 .action-row {
   display: grid;
   gap: 10px;
@@ -771,6 +956,29 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.selected-color-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: #1e3a8a;
+  font-size: 0.9rem;
+}
+
+.selected-color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.selected-color-text {
+  flex: 1;
 }
 
 .chat-input .input-textarea {

@@ -72,13 +72,60 @@ type PaletteResult struct {
 
 // GenerateColorPalette 使用AI生成配色方案，支持3次重试
 func GenerateColorPalette(prompt string) (*PaletteResult, error) {
+	systemPrompt := buildBaseSystemPrompt()
+	userPrompt := fmt.Sprintf("请你帮我生成这样的配色：%s", prompt)
+	return retryGeneratePalette(systemPrompt, userPrompt)
+}
+
+// GeneratePaletteWithSingleColor 仅替换指定颜色，保持其他颜色不变
+func GeneratePaletteWithSingleColor(baseColors []string, targetIndex int, prompt string) (*PaletteResult, error) {
+	normalized, ok := normalizeColors(baseColors)
+	if !ok {
+		return nil, fmt.Errorf("base colors must be 5 valid hex values")
+	}
+	if targetIndex < 0 || targetIndex >= len(normalized) {
+		return nil, fmt.Errorf("targetIndex out of range")
+	}
+
+	systemPrompt := buildSingleColorSystemPrompt()
+	userPrompt := fmt.Sprintf(
+		"现有配色（顺序固定）为：%s。仅替换第%d个颜色 %s，依据用户的新需求：%s。保持其余颜色不变，返回新的完整5色方案及使用建议。",
+		strings.Join(normalized, ", "),
+		targetIndex+1,
+		normalized[targetIndex],
+		prompt,
+	)
+
+	result, err := retryGeneratePalette(systemPrompt, userPrompt)
+	if err != nil {
+		return nil, err
+	}
+
+	// 强制只替换目标位置，其余颜色保持不变
+	finalColors := make([]string, len(normalized))
+	copy(finalColors, normalized)
+
+	if len(result.Colors) == len(normalized) {
+		finalColors[targetIndex] = result.Colors[targetIndex]
+	} else {
+		log.Printf("[WARN] AI returned %d colors in single-color mode, falling back to base for others", len(result.Colors))
+		if len(result.Colors) > targetIndex {
+			finalColors[targetIndex] = result.Colors[targetIndex]
+		}
+	}
+
+	result.Colors = finalColors
+	return result, nil
+}
+
+func retryGeneratePalette(systemPrompt, userPrompt string) (*PaletteResult, error) {
 	const maxRetries = 3
 	var lastErr error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		log.Printf("[INFO] Attempting to generate palette (attempt %d/%d)", attempt, maxRetries)
 
-		result, err := attemptGenerateColorPalette(prompt)
+		result, err := attemptGenerateWithPrompt(systemPrompt, userPrompt)
 		if err == nil {
 			return result, nil
 		}
@@ -86,7 +133,6 @@ func GenerateColorPalette(prompt string) (*PaletteResult, error) {
 		lastErr = err
 		log.Printf("[WARN] Attempt %d failed: %v", attempt, err)
 
-		// 如果还有重试次数，等待后重试
 		if attempt < maxRetries {
 			time.Sleep(time.Second * time.Duration(attempt))
 		}
@@ -96,24 +142,11 @@ func GenerateColorPalette(prompt string) (*PaletteResult, error) {
 	return nil, fmt.Errorf("all %d retry attempts failed, last error: %w", maxRetries, lastErr)
 }
 
-// attemptGenerateColorPalette 单次尝试生成配色
-func attemptGenerateColorPalette(prompt string) (*PaletteResult, error) {
+func attemptGenerateWithPrompt(systemPrompt, userPrompt string) (*PaletteResult, error) {
 	cfg := config.AppConfig
 	if cfg.AIAPIKey == "" {
 		return nil, fmt.Errorf("AI API key not configured")
 	}
-
-	systemPrompt := `
-	你是一个专业的配色设计师。用户会给你一个配色需求描述，你需要返回5个精确的HEX颜色代码，并给出配色使用建议。
-	你必须通过调用 return_palette 工具函数返回结果，不要输出任何自然语言文本。
-	1. 采用【渐变过渡技巧】，在冲突色之间创建中间色调缓冲层
-	2. 运用【色彩比例法则】：主色占60%，次色占30%，点缀色占10%
-	3. 建立【色彩秩序】：通过明度阶梯（从20%到80%亮度）建立视觉节奏
-	4. 添加【中性调和剂】：适当加入平衡色
-	5. 最终效果需呈现【动态和谐】- 既有视觉冲击力，又保持整体统一性
-	`
-
-	userPrompt := fmt.Sprintf("请你帮我生成这样的配色：%s", prompt)
 
 	paletteTool := buildPaletteToolDefinition()
 	toolChoice := "auto"
@@ -197,6 +230,27 @@ func attemptGenerateColorPalette(prompt string) (*PaletteResult, error) {
 	}
 
 	return nil, fmt.Errorf("AI Tool Call Failed: no tool_calls and no parsable result in content")
+}
+
+func buildBaseSystemPrompt() string {
+	return `
+你是一个专业的配色设计师。用户会给你一个配色需求描述，你需要返回5个精确的HEX颜色代码，并给出配色使用建议。
+你必须通过调用 return_palette 工具函数返回结果，不要输出任何自然语言文本。
+1. 采用【渐变过渡技巧】，在冲突色之间创建中间色调缓冲层
+2. 运用【色彩比例法则】：主色占60%，次色占30%，点缀色占10%
+3. 建立【色彩秩序】：通过明度阶梯（从20%到80%亮度）建立视觉节奏
+4. 添加【中性调和剂】：适当加入平衡色
+5. 最终效果需呈现【动态和谐】- 既有视觉冲击力，又保持整体统一性
+`
+}
+
+func buildSingleColorSystemPrompt() string {
+	return `
+你是一个专业的配色设计师。给定一组现有配色，你只允许替换指定的一个颜色，其余颜色必须保持不变。
+你必须通过调用 return_palette 工具函数返回结果，不要输出任何自然语言文本。
+输出的颜色顺序必须与输入保持一致，只替换被指定的颜色位置。
+请同时给出新的配色使用建议。
+`
 }
 
 // extractColors 从AI响应中提取HEX颜色代码

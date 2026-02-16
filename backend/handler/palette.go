@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -15,6 +16,12 @@ import (
 
 type ColorPaletteRequest struct {
 	Prompt string `json:"prompt" binding:"required"`
+}
+
+type SingleColorRequest struct {
+	Prompt      string   `json:"prompt" binding:"required"`
+	BaseColors  []string `json:"base_colors" binding:"required"`
+	TargetIndex int      `json:"target_index" binding:"required"`
 }
 
 type ColorPaletteResponse struct {
@@ -62,6 +69,65 @@ func GeneratePaletteHandler(c *gin.Context) {
 		Advice:      result.Advice,
 		Timestamp:   time.Now().Unix(),
 		Description: fmt.Sprintf("根据提示词 '%s' 生成的配色方案", req.Prompt),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// RegenerateSingleColorHandler 仅重新生成指定位置的颜色
+func RegenerateSingleColorHandler(c *gin.Context) {
+	var req SingleColorRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(req.BaseColors) != 5 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "base_colors must contain 5 colors"})
+		return
+	}
+
+	if req.TargetIndex < 0 || req.TargetIndex >= len(req.BaseColors) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "target_index out of range"})
+		return
+	}
+
+	hexRe := regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
+	normalized := make([]string, 0, 5)
+	for _, color := range req.BaseColors {
+		candidate := strings.ToUpper(strings.TrimSpace(color))
+		if !hexRe.MatchString(candidate) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid color: %s", color)})
+			return
+		}
+		normalized = append(normalized, candidate)
+	}
+
+	result, err := ai.GeneratePaletteWithSingleColor(normalized, req.TargetIndex, req.Prompt)
+	if err != nil {
+		log.Printf("[ERROR] AI single color generation failed: %v, fallback to replace target only", err)
+		rand.Seed(time.Now().UnixNano())
+		replacement := fmt.Sprintf("#%06X", rand.Intn(0xFFFFFF))
+		normalized[req.TargetIndex] = replacement
+		result = &ai.PaletteResult{
+			Colors: normalized,
+			Advice: "AI 调用失败，已为指定位置生成备选颜色。建议再尝试一次以获得更佳效果。",
+		}
+	}
+
+	// 再次确保只有目标位置被替换
+	if len(result.Colors) == len(normalized) {
+		keep := make([]string, len(normalized))
+		copy(keep, normalized)
+		keep[req.TargetIndex] = result.Colors[req.TargetIndex]
+		result.Colors = keep
+	}
+
+	response := ColorPaletteResponse{
+		Colors:      result.Colors,
+		Advice:      result.Advice,
+		Timestamp:   time.Now().Unix(),
+		Description: fmt.Sprintf("针对第%d个颜色的定向微调", req.TargetIndex+1),
 	}
 
 	c.JSON(http.StatusOK, response)
