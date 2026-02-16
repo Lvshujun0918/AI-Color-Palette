@@ -161,7 +161,7 @@ import { ref, onMounted, computed } from 'vue'
 import ColorDisplay from '../components/ColorDisplay.vue'
 import Notification from '../components/Notification.vue'
 import GlassButton from '../components/GlassButton.vue'
-import { generatePalette, healthCheck, regenerateSingleColor } from '../utils/api'
+import { generatePalette, healthCheck, regenerateSingleColor, refinePalette } from '../utils/api'
 import { notify } from '../utils/notify'
 import {
   getContrastRatio,
@@ -209,6 +209,7 @@ export default {
     const currentPrompt = ref('默认配色方案')
     const currentTimestamp = ref(Date.now())
     const currentAdvice = ref('')
+    const currentSessionId = ref(null) // 当前会话ID，用于区分不同轮次
     const histories = ref([])
     const chatInput = ref('')
     const chatMessages = ref([createWelcomeMessage()])
@@ -338,16 +339,11 @@ export default {
       chatMessages.value = [createWelcomeMessage()]
       saveChatMessagesToStorage()
       // 重置当前的配色状态为默认值
-      currentColors.value = [
-        '#ffc2c2',
-        '#ffe0c2',
-        '#feffd6',
-        '#d9ffcc',
-        '#b9f9ff'
-      ]
-      currentPrompt.value = '默认配色方案'
+      currentColors.value = []
+      currentPrompt.value = ''
       currentTimestamp.value = Date.now()
       currentAdvice.value = ''
+      currentSessionId.value = null
       showSessionChoice.value = false
     }
 
@@ -390,22 +386,50 @@ export default {
     const handleGenerate = async (prompt) => {
       loading.value = true
       try {
-        const response = await generatePalette(prompt)
+        let response
+        let isRefinement = false
+
+        // 如果已有会话且当前有配色，则进行微调
+        if (currentSessionId.value && currentColors.value.length === 5) {
+          isRefinement = true
+          response = await refinePalette(currentColors.value, prompt)
+          currentPrompt.value = prompt // 更新提示词为当前微调提示词
+        } else {
+          // 新会话或无配色，执行生成
+          response = await generatePalette(prompt)
+          currentSessionId.value = Date.now()
+          currentPrompt.value = prompt
+        }
+
         currentColors.value = response.data.colors
-        currentPrompt.value = prompt
         currentTimestamp.value = response.data.timestamp * 1000
         currentAdvice.value = response.data.advice || ''
 
-        // 保存到历史记录
+        // 更新或添加历史记录
         const newHistory = {
-          id: Date.now(),
-          prompt: prompt,
+          id: currentSessionId.value,
+          prompt: currentPrompt.value, // 始终显示最新的提示词
           colors: response.data.colors,
           timestamp: response.data.timestamp,
           advice: response.data.advice || ''
         }
 
-        histories.value.unshift(newHistory)
+        if (isRefinement) {
+          // 微调模式下，更新当前会话的历史记录（保持该会话在列表中的位置，或者移到最前）
+          const index = histories.value.findIndex(h => h.id === currentSessionId.value)
+          if (index !== -1) {
+            histories.value[index] = newHistory
+            // 如果希望微调后该会话置顶，可以先删除再unshift
+            // histories.value.splice(index, 1)
+            // histories.value.unshift(newHistory)
+          } else {
+            // 理论上不会发生，但作为防备
+            histories.value.unshift(newHistory)
+          }
+        } else {
+          // 新会话，直接添加
+          histories.value.unshift(newHistory)
+        }
 
         // 最多保存20条记录
         if (histories.value.length > MAX_HISTORY) {

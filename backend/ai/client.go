@@ -118,6 +118,23 @@ func GeneratePaletteWithSingleColor(baseColors []string, targetIndex int, prompt
 	return result, nil
 }
 
+// RefinePalette 基于现有配色方案进行微调
+func RefinePalette(currentColors []string, prompt string) (*PaletteResult, error) {
+	normalized, ok := normalizeColors(currentColors)
+	if !ok {
+		return nil, fmt.Errorf("current colors must be 5 valid hex values")
+	}
+
+	systemPrompt := buildBaseSystemPrompt()
+	userPrompt := fmt.Sprintf(
+		"现有配色为：%s。用户希望在此基础上进行调整：%s。请根据用户的修改意见，生成一个新的5色方案。如果不涉及具体颜色修改，请保持原有风格。返回新的完整5色方案及使用建议。",
+		strings.Join(normalized, ", "),
+		prompt,
+	)
+
+	return retryGeneratePalette(systemPrompt, userPrompt)
+}
+
 func retryGeneratePalette(systemPrompt, userPrompt string) (*PaletteResult, error) {
 	const maxRetries = 3
 	var lastErr error

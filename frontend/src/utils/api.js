@@ -18,6 +18,14 @@ export const regenerateSingleColor = (payload) => {
   return apiClient.post('/regenerate-color', payload)
 }
 
+// 微调配色方案
+export const refinePalette = (currentColors, prompt) => {
+  return apiClient.post('/refine-palette', {
+    current_colors: currentColors,
+    prompt: prompt
+  })
+}
+
 // 健康检查
 export const healthCheck = () => {
   return apiClient.get('/health')

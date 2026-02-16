@@ -41,6 +41,7 @@ func main() {
 	router.Use(cors.New(config))
 	router.GET("/api/health", handler.HealthHandler)
 	router.POST("/api/generate-palette", handler.GeneratePaletteHandler)
+	router.POST("/api/refine-palette", handler.RefinePaletteHandler)
 	router.POST("/api/regenerate-color", handler.RegenerateSingleColorHandler)
 	log.Println("[INFO] GIN Server ready")
 	log.Println("[INFO] GIN Server starting on :5208")

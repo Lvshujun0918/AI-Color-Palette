@@ -31,6 +31,11 @@ type ColorPaletteResponse struct {
 	Description string   `json:"description"`
 }
 
+type RefinePaletteRequest struct {
+	CurrentColors []string `json:"current_colors" binding:"required"`
+	Prompt        string   `json:"prompt" binding:"required"`
+}
+
 // GeneratePaletteHandler 使用AI生成配色方案，失败时降级到随机生成
 func GeneratePaletteHandler(c *gin.Context) {
 	var req ColorPaletteRequest
@@ -128,6 +133,31 @@ func RegenerateSingleColorHandler(c *gin.Context) {
 		Advice:      result.Advice,
 		Timestamp:   time.Now().Unix(),
 		Description: fmt.Sprintf("针对第%d个颜色的定向微调", req.TargetIndex+1),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// RefinePaletteHandler 基于现有配色方案进行微调
+func RefinePaletteHandler(c *gin.Context) {
+	var req RefinePaletteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := ai.RefinePalette(req.CurrentColors, req.Prompt)
+	if err != nil {
+		log.Printf("[ERROR] Refine palette failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to refine palette"})
+		return
+	}
+
+	response := ColorPaletteResponse{
+		Colors:    result.Colors,
+		Advice:    result.Advice,
+		Timestamp: time.Now().Unix(),
+		Description: fmt.Sprintf("基于提示词 '%s' 调整的配色", req.Prompt),
 	}
 
 	c.JSON(http.StatusOK, response)
