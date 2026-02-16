@@ -98,28 +98,33 @@
         <div class="panel panel-right glass-panel">
           <ColorDisplay :colors="currentColors" :prompt="currentPrompt" :timestamp="currentTimestamp"
             :advice="currentAdvice" @regenerate="handleRegenerate" />
-          <div class="quick-actions-panel">
-            <div class="action-header">快捷指令</div>
-            <div class="action-row">
-              <button class="action-chip" @click="insertQuickInput('查看历史记录')">查看历史</button>
-              <button class="action-chip" @click="insertQuickInput('不满意，重新生成')">重新生成</button>
-              <button class="action-chip" @click="insertQuickInput('对比度检查')">对比度检查</button>
-              <button class="action-chip" @click="insertQuickInput('色盲检查')">色盲检查</button>
-            </div>
-            <div class="action-row selector-row">
-              <div class="selector-group">
-                <label>颜色1</label>
-                <select v-model="selectedColor1">
-                  <option v-for="(color, index) in currentColors" :key="index" :value="color">{{ color }}</option>
-                </select>
+          <div class="quick-actions-panel" :class="{ collapsed: !isQuickActionsOpen }">
+            <button class="action-header" @click="toggleQuickActions">
+              <span>快捷指令</span>
+              <span class="toggle-icon">{{ isQuickActionsOpen ? '收起' : '展开' }}</span>
+            </button>
+            <div class="quick-actions-body" v-show="isQuickActionsOpen">
+              <div class="action-row">
+                <button class="action-chip" @click="insertQuickInput('查看历史记录')">查看历史</button>
+                <button class="action-chip" @click="insertQuickInput('不满意，重新生成')">重新生成</button>
+                <button class="action-chip" @click="insertQuickInput('对比度检查')">对比度检查</button>
+                <button class="action-chip" @click="insertQuickInput('色盲检查')">色盲检查</button>
               </div>
-              <div class="selector-group">
-                <label>颜色2</label>
-                <select v-model="selectedColor2">
-                  <option v-for="(color, index) in currentColors" :key="index" :value="color">{{ color }}</option>
-                </select>
+              <div class="action-row selector-row">
+                <div class="selector-group">
+                  <label>颜色1</label>
+                  <select v-model="selectedColor1">
+                    <option v-for="(color, index) in currentColors" :key="index" :value="color">{{ color }}</option>
+                  </select>
+                </div>
+                <div class="selector-group">
+                  <label>颜色2</label>
+                  <select v-model="selectedColor2">
+                    <option v-for="(color, index) in currentColors" :key="index" :value="color">{{ color }}</option>
+                  </select>
+                </div>
+                <div class="selector-hint">选择颜色后输入“对比度检查”</div>
               </div>
-              <div class="selector-hint">选择颜色后输入“对比度检查”</div>
             </div>
           </div>
         </div>
@@ -187,6 +192,7 @@ export default {
     ])
     const selectedColor1 = ref('')
     const selectedColor2 = ref('')
+    const isQuickActionsOpen = ref(true)
     const colorblindTypes = [
       { key: 'deuteranopia', name: '红绿色盲 (Deuteranopia)' },
       { key: 'protanopia', name: '红绿色弱 (Protanopia)' },
@@ -319,6 +325,10 @@ export default {
       chatInput.value = text
     }
 
+    const toggleQuickActions = () => {
+      isQuickActionsOpen.value = !isQuickActionsOpen.value
+    }
+
     const handleSendPrompt = () => {
       const prompt = chatInput.value.trim()
       if (!prompt) return
@@ -449,12 +459,14 @@ export default {
       chatMessages,
       selectedColor1,
       selectedColor2,
+      isQuickActionsOpen,
       colorblindTypes,
       handleGenerate,
       handleSelectHistory,
       handleRegenerate,
       handleSendPrompt,
       insertQuickInput,
+      toggleQuickActions,
       handleShowHistory,
       handleContrastCheck,
       handleColorblindCheck,
@@ -665,13 +677,39 @@ export default {
 .quick-actions-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
+  gap: 0;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   margin: 0 16px 16px;
+  overflow: hidden;
+}
+
+.action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  cursor: pointer;
+}
+
+.toggle-icon {
+  font-size: 0.82rem;
+  color: #718096;
+}
+
+.quick-actions-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .action-row {
@@ -679,12 +717,6 @@ export default {
   gap: 10px;
   align-items: center;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.action-header {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 0.95rem;
 }
 
 .action-chip {
