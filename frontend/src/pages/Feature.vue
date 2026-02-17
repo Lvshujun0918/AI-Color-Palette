@@ -158,12 +158,31 @@
       <Notification />
 
       <div v-if="showSessionChoice" class="session-choice-overlay">
-        <div class="session-choice-card glass-panel">
-          <div class="session-choice-title">检测到上次对话</div>
-          <div class="session-choice-text">你希望继续保留历史对话，还是新建一轮对话？</div>
+        <div class="session-choice-card glass-panel wide-card">
+          <div class="session-choice-header">
+            <div class="session-choice-title">继续之前的创作</div>
+          </div>
+          
+          <div class="session-list-scroll">
+             <div v-if="savedSessions.length === 0" class="empty-state">
+                暂无历史会话记录
+             </div>
+             <div v-else class="history-session-item" v-for="session in savedSessions" :key="session.id" @click="loadSession(session)">
+              <div class="session-info">
+                <div class="session-theme">{{ session.theme || '无主题' }}</div>
+                <div class="session-time">{{ formatTime(session.timestamp) }}</div>
+                <div class="session-preview-colors">
+                  <span v-for="(c, i) in (session.colors || session.currentColors || [])" :key="i" class="mini-color-dot" :style="{ backgroundColor: c }"></span>
+                </div>
+              </div>
+              <button class="delete-session-btn" @click.stop="deleteSession(session.id)">✕</button>
+            </div>
+          </div>
+
           <div class="session-choice-actions">
-            <button class="session-btn secondary" @click="startNewConversation">新建对话</button>
-            <button class="session-btn primary" @click="restoreConversation">保留历史</button>
+            <button class="session-btn primary full-width" @click="startNewConversation">
+              <span>+</span> 开始新一轮配色
+            </button>
           </div>
         </div>
       </div>
@@ -869,12 +888,14 @@ export default {
     const loadSession = (session) => {
       if (currentSessionId.value === session.id) {
         showHistoryPanel.value = false
+        showSessionChoice.value = false
         return
       }
 
       const applied = loadSessionById(session.id, { updateRoute: true, notifyUser: false })
       if (applied) {
         showHistoryPanel.value = false
+        showSessionChoice.value = false
         notify(`已切换至会话: ${session.theme || '未命名主题'}`, 'success')
       }
     }
@@ -1638,6 +1659,69 @@ export default {
   font-size: 0.8rem;
   color: #718096;
   margin-bottom: 8px;
+}
+
+/* 宽屏卡片样式覆盖 */
+.session-choice-card.wide-card {
+  width: min(92vw, 500px);
+  max-width: 500px;
+  max-height: 80vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.9); /* 提高不透明度 */
+}
+
+.session-choice-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.session-choice-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+}
+
+.session-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100px; /* 最小高度 */
+}
+
+.session-choice-actions {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.full-width {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1rem;
+  padding: 10px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.empty-state {
+  text-align: center;
+  color: #a0aec0;
+  padding: 40px 0;
+  font-size: 0.95rem;
 }
 
 .session-preview-colors {
