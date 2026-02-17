@@ -127,7 +127,7 @@ func RefinePalette(currentColors []string, prompt string) (*PaletteResult, error
 
 	systemPrompt := buildBaseSystemPrompt()
 	userPrompt := fmt.Sprintf(
-		"现有配色为：%s。用户希望在此基础上进行调整：%s。请根据用户的修改意见，生成一个新的5色方案。如果不涉及具体颜色修改，请保持原有风格。返回新的完整5色方案及使用建议。",
+		"现有配色为：%s。用户希望在此基础上进行调整：%s。请根据用户的修改意见，生成一个新的5色方案，必须要与原方案具有**较大的相似性**。如果不涉及具体颜色修改，请保持原有风格。返回新的完整5色方案及使用建议。",
 		strings.Join(normalized, ", "),
 		prompt,
 	)

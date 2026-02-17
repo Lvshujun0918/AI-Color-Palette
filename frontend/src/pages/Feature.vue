@@ -17,7 +17,7 @@
         <!-- 左侧：对话面板 -->
         <div class="panel panel-left glass-panel">
           <div class="chat-container">
-            <div class="chat-header">配色对话助手</div>
+            <div class="chat-header">配色对话助手<p v-if="currentSessionTheme" class="session-theme-title">主题：{{ currentSessionTheme }}</p></div>
 
             <div class="chat-messages">
               <div v-for="message in chatMessages" :key="message.id" class="chat-message" :class="message.role">
@@ -26,12 +26,13 @@
 
                   <template v-else-if="message.type === 'palette'">
                     <div class="palette-summary">
-                      <div class="palette-title">已生成配色</div>
+                      <div class="palette-title">{{ message.payload.title || '已生成配色' }}</div>
                       <div class="palette-colors">
                         <span v-for="(color, index) in message.payload.colors" :key="index" class="palette-chip clickable-chip"
                           :style="{ backgroundColor: color }" :title="color"
                           @click="handlePickColorFromChat(message.payload.colors, index)"></span>
                       </div>
+                      <div class="palette-text">提示词：{{ message.payload.prompt }}</div>
                       <div class="palette-text">详细信息请查看右侧配色面板</div>
                     </div>
                   </template>
@@ -114,7 +115,7 @@
             </button>
             <div class="quick-actions-body" v-show="isQuickActionsOpen">
               <div class="action-row">
-                <button class="action-chip" @click="insertQuickInput('查看历史记录')">查看历史</button>
+                <button class="action-chip" @click="showHistoryPanel = true">查看历史记录</button>
                 <button class="action-chip" @click="insertQuickInput('不满意，重新生成')">重新生成</button>
                 <button class="action-chip" @click="insertQuickInput('对比度检查')">对比度检查</button>
                 <button class="action-chip" @click="insertQuickInput('色盲检查')">色盲检查</button>
@@ -134,6 +135,31 @@
                 </div>
                 <div class="selector-hint">选择颜色后输入“对比度检查”</div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史记录面板 -->
+      <div v-if="showHistoryPanel" class="history-panel-overlay">
+        <div class="history-panel-card glass-panel">
+          <div class="history-panel-header">
+            <h3>历史记录</h3>
+            <button class="close-btn" @click="showHistoryPanel = false">✕</button>
+          </div>
+          <div class="history-list-container">
+            <div v-if="savedSessions.length === 0" class="empty-history">
+              暂无历史会话
+            </div>
+            <div v-else class="history-session-item" v-for="session in savedSessions" :key="session.id" @click="loadSession(session)">
+              <div class="session-info">
+                <div class="session-theme">{{ session.theme || '无主题' }}</div>
+                <div class="session-time">{{ formatTime(session.timestamp) }}</div>
+                <div class="session-preview-colors">
+                  <span v-for="(c, i) in (session.colors || session.currentColors || [])" :key="i" class="mini-color-dot" :style="{ backgroundColor: c }"></span>
+                </div>
+              </div>
+              <button class="delete-session-btn" @click.stop="deleteSession(session.id)">✕</button>
             </div>
           </div>
         </div>
@@ -175,8 +201,10 @@ import logo from '../assets/logo.png'
 
 const STORAGE_KEY = 'ai_color_palette_history'
 const CHAT_STORAGE_KEY = 'ai_color_palette_chat_history'
+const SESSIONS_STORAGE_KEY = 'ai_color_palette_sessions' // 存储当前会话的聊天对
 const MAX_HISTORY = 20
 const MAX_CHAT_HISTORY = 200
+const MAX_SESSIONS = 50
 
 const createWelcomeMessage = () => ({
   id: Date.now(),
@@ -210,10 +238,13 @@ export default {
     const currentTimestamp = ref(Date.now())
     const currentAdvice = ref('')
     const currentSessionId = ref(null) // 当前会话ID，用于区分不同轮次
+    const currentSessionTheme = ref('') // 当前会话主题（首次提示词）
     const histories = ref([])
     const chatInput = ref('')
     const chatMessages = ref([createWelcomeMessage()])
     const showSessionChoice = ref(false)
+    const showHistoryPanel = ref(false)
+    const savedSessions = ref([])
     const selectedColor1 = ref('')
     const selectedColor2 = ref('')
     const singleColorHex = ref('')
@@ -250,7 +281,9 @@ export default {
           if (histories.value.length > 0) {
             const latest = histories.value[0]
             currentColors.value = latest.colors || []
-            currentPrompt.value = latest.prompt || '默认配色方案'
+            currentSessionId.value = latest.id
+            currentSessionTheme.value = latest.prompt // 恢复会话主题
+            currentPrompt.value = latest.currentPrompt || latest.prompt
             currentTimestamp.value = (latest.timestamp || Date.now()) * 1000
             currentAdvice.value = latest.advice || ''
           }
@@ -302,9 +335,63 @@ export default {
       }
     }
 
+    const loadSessionsFromStorage = () => {
+      try {
+        const stored = localStorage.getItem(SESSIONS_STORAGE_KEY)
+        if (stored) {
+          savedSessions.value = JSON.parse(stored)
+        }
+      } catch (e) {
+        console.error('加载历史会话失败', e)
+      }
+    }
+
+    const saveCurrentSession = (saveToStorage = true) => {
+      // 只有在已经建立了会话ID时保存
+      if (!currentSessionId.value) return
+
+      // 查找或创建会话对象
+      let session = savedSessions.value.find(s => s.id === currentSessionId.value)
+      
+      const newSessionData = {
+        id: currentSessionId.value,
+        theme: currentSessionTheme.value || '未命名主题',
+        timestamp: Date.now(), // 更新最后活动时间
+        colors: currentColors.value || [],
+        prompt: currentPrompt.value || '',
+        advice: currentAdvice.value || '',
+        messages: chatMessages.value || [] // 保存完整对话记录
+      }
+
+      if (session) {
+        Object.assign(session, newSessionData)
+      } else {
+        savedSessions.value.unshift(newSessionData)
+      }
+      
+      // 始终保持最新在前
+      savedSessions.value.sort((a, b) => b.timestamp - a.timestamp)
+      
+      if (savedSessions.value.length > MAX_SESSIONS) {
+        savedSessions.value = savedSessions.value.slice(0, MAX_SESSIONS)
+      }
+
+      if (saveToStorage) {
+        try {
+          localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(savedSessions.value))
+        } catch (e) {
+          console.error('保存会话列表失败', e)
+        }
+      }
+    }
+
     const saveChatMessagesToStorage = () => {
       try {
         localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages.value))
+        // 同时保存会话数据到历史列表
+        if (currentSessionId.value) {
+          saveCurrentSession(true)
+        }
       } catch (error) {
         console.error('保存对话记录失败:', error)
       }
@@ -335,6 +422,7 @@ export default {
     }
 
     const startNewConversation = () => {
+      saveCurrentSession()
       clearSingleColorMode()
       chatMessages.value = [createWelcomeMessage()]
       saveChatMessagesToStorage()
@@ -344,6 +432,7 @@ export default {
       currentTimestamp.value = Date.now()
       currentAdvice.value = ''
       currentSessionId.value = null
+      currentSessionTheme.value = ''
       showSessionChoice.value = false
     }
 
@@ -394,11 +483,14 @@ export default {
           isRefinement = true
           response = await refinePalette(currentColors.value, prompt)
           currentPrompt.value = prompt // 更新提示词为当前微调提示词
+          console.log('微调配色，保持会话ID:', currentSessionId.value, '主题:', currentSessionTheme.value)
         } else {
           // 新会话或无配色，执行生成
           response = await generatePalette(prompt)
           currentSessionId.value = Date.now()
+          currentSessionTheme.value = prompt // 记录第一轮的提示词作为主题
           currentPrompt.value = prompt
+          console.log('新生成配色，设置会话ID:', currentSessionId.value, '主题:', currentSessionTheme.value)
         }
 
         currentColors.value = response.data.colors
@@ -406,9 +498,12 @@ export default {
         currentAdvice.value = response.data.advice || ''
 
         // 更新或添加历史记录
+        // 历史记录中的 prompt 字段这里我们改为存储 sessionTheme，以便在列表显示主题
+        // 但为了不丢失当前生成的上下文，我们可以把具体 prompt 存在另一个字段，但目前 request 只要求显示 Session 主题
         const newHistory = {
           id: currentSessionId.value,
-          prompt: currentPrompt.value, // 始终显示最新的提示词
+          prompt: currentSessionTheme.value, // 使用会话主题作为历史记录的标题
+          currentPrompt: currentPrompt.value, // 保存当前具体的提示词备用
           colors: response.data.colors,
           timestamp: response.data.timestamp,
           advice: response.data.advice || ''
@@ -423,7 +518,7 @@ export default {
             // histories.value.splice(index, 1)
             // histories.value.unshift(newHistory)
           } else {
-            // 理论上不会发生，但作为防备
+            // 历史记录可能已被清理，重新添加
             histories.value.unshift(newHistory)
           }
         } else {
@@ -441,6 +536,7 @@ export default {
 
         notify('配色生成成功！', 'success')
         addChatMessage('assistant', 'palette', '', {
+          title: isRefinement ? '已修改配色' : '已生成配色', // 根据是否是微调显示不同标题
           colors: response.data.colors,
           prompt,
           advice: response.data.advice || ''
@@ -456,13 +552,16 @@ export default {
 
     const handleSelectHistory = (item) => {
       currentColors.value = item.colors
-      currentPrompt.value = item.prompt
+      currentPrompt.value = item.currentPrompt || item.prompt
+      currentSessionTheme.value = item.prompt // 历史记录的 prompt 字段存的是 theme
       currentTimestamp.value = item.timestamp * 1000
       currentAdvice.value = item.advice || ''
+      currentSessionId.value = item.id // 恢复会话上下文
       notify('已加载历史配色', 'success')
       addChatMessage('assistant', 'palette', '', {
+        title: '历史配色',
         colors: item.colors,
-        prompt: item.prompt,
+        prompt: item.currentPrompt || item.prompt,
         advice: item.advice || ''
       })
     }
@@ -482,6 +581,11 @@ export default {
       if (!singleColorHex.value) {
         notify('请先从左侧选择需要替换的颜色', 'warning')
         return
+      }
+
+      if (!currentSessionId.value) {
+        currentSessionId.value = Date.now()
+        currentSessionTheme.value = currentSessionTheme.value || currentPrompt.value || '未命名主题'
       }
 
       const base = singleColorBase.value.length === currentColors.value.length
@@ -516,20 +620,28 @@ export default {
         currentAdvice.value = response.data.advice || ''
 
         const newHistory = {
-          id: Date.now(),
-          prompt: currentPrompt.value,
+          id: currentSessionId.value,
+          prompt: currentSessionTheme.value,
+          currentPrompt: currentPrompt.value,
           colors: response.data.colors,
           timestamp: response.data.timestamp,
           advice: response.data.advice || ''
         }
 
-        histories.value.unshift(newHistory)
+        const index = histories.value.findIndex(h => h.id === currentSessionId.value)
+        if (index !== -1) {
+          histories.value[index] = newHistory
+        } else {
+          histories.value.unshift(newHistory)
+        }
+
         if (histories.value.length > MAX_HISTORY) {
           histories.value.pop()
         }
         saveHistoriesToStorage()
 
         addChatMessage('assistant', 'palette', '', {
+          title: '已修改配色',
           colors: response.data.colors,
           prompt: currentPrompt.value,
           advice: response.data.advice || ''
@@ -586,11 +698,7 @@ export default {
     }
 
     const handleShowHistory = () => {
-      if (histories.value.length === 0) {
-        addChatMessage('assistant', 'text', '暂无历史记录，先生成一次配色吧。')
-        return
-      }
-      addChatMessage('assistant', 'history', '', histories.value)
+      showHistoryPanel.value = true
     }
 
     const handleContrastCheck = () => {
@@ -661,6 +769,53 @@ export default {
       })
     }
 
+// removed loadSessionsFromStorage and saveCurrentSession from down here
+// already moved up
+
+    const loadSession = (session) => {
+      if (currentSessionId.value === session.id) {
+        showHistoryPanel.value = false
+        return
+      }
+      
+      // 切换前先保存当前会话（如果存在）
+      if (currentSessionId.value) {
+        saveCurrentSession(true)
+      }
+
+      // 恢复目标会话
+      currentSessionId.value = session.id
+      currentSessionTheme.value = session.theme || ''
+      currentColors.value = session.colors || session.currentColors || []
+      currentPrompt.value = session.prompt || ''
+      currentAdvice.value = session.advice || ''
+      chatMessages.value = Array.isArray(session.messages) && session.messages.length > 0
+        ? session.messages
+        : [createWelcomeMessage()]
+      
+      // 更新当前活动的聊天记录存储（用于刷新页面恢复）
+      saveChatMessagesToStorage()
+      
+      showHistoryPanel.value = false
+      notify(`已切换至会话: ${session.theme || '未命名主题'}`, 'success')
+    }
+
+    const deleteSession = (sessionId) => {
+      savedSessions.value = savedSessions.value.filter(s => s.id !== sessionId)
+      try {
+        localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(savedSessions.value))
+      } catch (e) {
+        console.error('删除会话失败', e)
+      }
+      
+      // 如果删除了当前正在查看的会话，则重置
+      if (currentSessionId.value === sessionId) {
+        startNewConversation()
+      }
+    }
+
+    // Wrap saveChatMessagesToStorage to also update the session list REMOVED
+
     onMounted(async () => {
       // 健康检查
       try {
@@ -670,6 +825,9 @@ export default {
         console.error('服务器连接失败:', error)
         notify('无法连接到服务器，请确保后端已启动', 'error')
       }
+
+      // 预加载历史会话列表
+      loadSessionsFromStorage()
 
       // 从localStorage加载历史记录
       loadHistoriesFromStorage()
@@ -684,19 +842,27 @@ export default {
         selectedColor1.value = currentColors.value[0]
         selectedColor2.value = currentColors.value[1] || currentColors.value[0]
       }
+
+      // 加载历史会话
+      loadSessionsFromStorage()
     })
 
     return {
       loading,
       showSessionChoice,
+      showHistoryPanel,
+      savedSessions,
       clearSingleColorMode,
       startNewConversation,
       restoreConversation,
+      loadSession,
+      deleteSession,
       currentColors,
       currentPrompt,
       currentBackground,
       currentTimestamp,
       currentAdvice,
+      currentSessionTheme,
       histories,
       chatInput,
       chatMessages,
@@ -1258,6 +1424,155 @@ export default {
   filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.3));
 }
 
+/* 新增样式：会话主题标题 */
+.session-theme-title {
+  font-weight: 500;
+  color: #4a5568;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+/* 历史记录面板样式 */
+.history-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.history-panel-card {
+  width: 90%;
+  max-width: 600px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.history-panel-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-panel-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #2d3748;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #4a5568;
+}
+
+.history-list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-history {
+  text-align: center;
+  color: #a0aec0;
+  margin-top: 40px;
+}
+
+.history-session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-session-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-theme {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-time {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-bottom: 8px;
+}
+
+.session-preview-colors {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.delete-session-btn {
+  background: none;
+  border: none;
+  color: #cbd5e0;
+  padding: 8px;
+  margin-left: 12px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+
+.delete-session-btn:hover {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.1);
+  border-radius: 8px;
+}
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .header {
