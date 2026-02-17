@@ -111,6 +111,15 @@ body {
   .main-content {
     flex-direction: column;
   }
+
+  .chat-messages{
+    min-height: 350px;
+  }
+
+  .container {
+    height: inherit;
+    overflow: inherit;
+  }
   
   .header h1 {
     font-size: 2rem;
