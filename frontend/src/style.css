@@ -113,7 +113,8 @@ body {
   }
 
   .chat-messages{
-    min-height: 350px;
+    height: 350px;
+    flex: inherit !important;
   }
 
   .container {
