@@ -155,6 +155,17 @@
       <!-- 通知 -->
       <Notification />
 
+      <div v-if="showNewConversationConfirm" class="new-conversation-overlay" @click.self="cancelStartNewConversation">
+        <div class="new-conversation-card glass-panel">
+          <div class="new-conversation-title">确认新建对话？</div>
+          <div class="new-conversation-text">当前未保存的上下文可能会丢失，是否继续？</div>
+          <div class="new-conversation-actions">
+            <button class="session-btn secondary" @click="cancelStartNewConversation">取消</button>
+            <button class="session-btn primary" @click="proceedStartNewConversation">确认新建</button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="showSessionChoice" class="session-choice-overlay">
         <div class="session-choice-card glass-panel wide-card">
           <div class="session-choice-header">
@@ -360,6 +371,49 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 15;
+}
+
+.new-conversation-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.new-conversation-card {
+  width: min(90vw, 420px);
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.25));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.new-conversation-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.new-conversation-text {
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.new-conversation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .session-choice-card {

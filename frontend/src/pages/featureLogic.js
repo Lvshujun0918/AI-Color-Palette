@@ -26,6 +26,7 @@ export function useFeatureLogic() {
   const chatInput = ref('')
   const chatMessages = ref([createWelcomeMessage()])
   const showSessionChoice = ref(false)
+  const showNewConversationConfirm = ref(false)
   const showHistoryPanel = ref(false)
   const savedSessions = ref([])
   const selectedColor1 = ref('')
@@ -211,19 +212,29 @@ export function useFeatureLogic() {
   }
 
   const confirmStartNewConversation = () => {
-    const confirmed = window.confirm('确认新建对话吗？当前未保存的上下文可能会丢失。')
-    if (!confirmed) return
+    showNewConversationConfirm.value = true
+  }
+
+  const cancelStartNewConversation = () => {
+    showNewConversationConfirm.value = false
+  }
+
+  const proceedStartNewConversation = () => {
+    showNewConversationConfirm.value = false
     sessionApi.startNewConversation()
   }
 
   return {
     loading,
     showSessionChoice,
+    showNewConversationConfirm,
     showHistoryPanel,
     savedSessions,
     clearSingleColorMode: sessionApi.clearSingleColorMode,
     startNewConversation: sessionApi.startNewConversation,
     confirmStartNewConversation,
+    cancelStartNewConversation,
+    proceedStartNewConversation,
     restoreConversation: sessionApi.restoreConversation,
     loadSession: sessionApi.loadSession,
     deleteSession: sessionApi.deleteSession,
