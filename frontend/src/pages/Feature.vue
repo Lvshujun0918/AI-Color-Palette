@@ -183,7 +183,8 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ColorDisplay from '../components/ColorDisplay.vue'
 import Notification from '../components/Notification.vue'
 import GlassButton from '../components/GlassButton.vue'
@@ -226,6 +227,8 @@ export default {
     }
   },
   setup() {
+    const router = useRouter()
+    const route = useRoute()
     const loading = ref(false)
     const currentColors = ref([
       '#ffc2c2',
@@ -434,6 +437,7 @@ export default {
       currentSessionId.value = null
       currentSessionTheme.value = ''
       showSessionChoice.value = false
+      router.replace('/feature')
     }
 
     const restoreConversation = () => {
@@ -490,6 +494,7 @@ export default {
           currentSessionId.value = Date.now()
           currentSessionTheme.value = prompt // 记录第一轮的提示词作为主题
           currentPrompt.value = prompt
+          router.replace(`/feature/${currentSessionId.value}`)
           console.log('新生成配色，设置会话ID:', currentSessionId.value, '主题:', currentSessionTheme.value)
         }
 
@@ -586,6 +591,7 @@ export default {
       if (!currentSessionId.value) {
         currentSessionId.value = Date.now()
         currentSessionTheme.value = currentSessionTheme.value || currentPrompt.value || '未命名主题'
+        router.replace(`/feature/${currentSessionId.value}`)
       }
 
       const base = singleColorBase.value.length === currentColors.value.length
@@ -772,32 +778,67 @@ export default {
 // removed loadSessionsFromStorage and saveCurrentSession from down here
 // already moved up
 
+    const findSessionById = (sessionId) => {
+      if (!sessionId) return null
+      return savedSessions.value.find(s => `${s.id}` === `${sessionId}`) || null
+    }
+
+    const applySession = (session) => {
+      if (!session) return false
+
+      clearSingleColorMode()
+
+      currentSessionId.value = session.id
+      currentSessionTheme.value = session.theme || ''
+      const restoredColors = session.colors || session.currentColors || []
+      currentColors.value = restoredColors
+      currentPrompt.value = session.prompt || ''
+      currentAdvice.value = session.advice || ''
+      const rawTimestamp = session.timestamp || Date.now()
+      currentTimestamp.value = rawTimestamp > 1_000_000_000_000 ? rawTimestamp : rawTimestamp * 1000
+      chatMessages.value = Array.isArray(session.messages) && session.messages.length > 0
+        ? session.messages
+        : [createWelcomeMessage()]
+
+      if (restoredColors.length > 0) {
+        selectedColor1.value = restoredColors[0]
+        selectedColor2.value = restoredColors[1] || restoredColors[0]
+      }
+
+      saveChatMessagesToStorage()
+      return true
+    }
+
+    const loadSessionById = (sessionId, options = {}) => {
+      const { updateRoute = false, notifyUser = true } = options
+      const session = findSessionById(sessionId)
+      if (!session) {
+        if (notifyUser) notify('未找到该会话', 'warning')
+        return false
+      }
+
+      if (currentSessionId.value && currentSessionId.value !== session.id) {
+        saveCurrentSession(true)
+      }
+
+      const applied = applySession(session)
+      if (applied && updateRoute) {
+        router.push(`/feature/${session.id}`)
+      }
+      return applied
+    }
+
     const loadSession = (session) => {
       if (currentSessionId.value === session.id) {
         showHistoryPanel.value = false
         return
       }
-      
-      // 切换前先保存当前会话（如果存在）
-      if (currentSessionId.value) {
-        saveCurrentSession(true)
-      }
 
-      // 恢复目标会话
-      currentSessionId.value = session.id
-      currentSessionTheme.value = session.theme || ''
-      currentColors.value = session.colors || session.currentColors || []
-      currentPrompt.value = session.prompt || ''
-      currentAdvice.value = session.advice || ''
-      chatMessages.value = Array.isArray(session.messages) && session.messages.length > 0
-        ? session.messages
-        : [createWelcomeMessage()]
-      
-      // 更新当前活动的聊天记录存储（用于刷新页面恢复）
-      saveChatMessagesToStorage()
-      
-      showHistoryPanel.value = false
-      notify(`已切换至会话: ${session.theme || '未命名主题'}`, 'success')
+      const applied = loadSessionById(session.id, { updateRoute: true, notifyUser: false })
+      if (applied) {
+        showHistoryPanel.value = false
+        notify(`已切换至会话: ${session.theme || '未命名主题'}`, 'success')
+      }
     }
 
     const deleteSession = (sessionId) => {
@@ -814,6 +855,17 @@ export default {
       }
     }
 
+    watch(
+      () => route.params.sessionId,
+      (sessionId) => {
+        if (!sessionId) return
+        const applied = loadSessionById(sessionId, { updateRoute: false, notifyUser: false })
+        if (applied) {
+          showHistoryPanel.value = false
+        }
+      }
+    )
+
     // Wrap saveChatMessagesToStorage to also update the session list REMOVED
 
     onMounted(async () => {
@@ -829,22 +881,28 @@ export default {
       // 预加载历史会话列表
       loadSessionsFromStorage()
 
-      // 从localStorage加载历史记录
-      loadHistoriesFromStorage()
-      const storedChat = getStoredChatMessages()
-      // 只有当存在除欢迎语以外的历史消息时才询问是否恢复
-      if (storedChat.length > 1) {
-        showSessionChoice.value = true
+      const routeSessionId = route.params.sessionId
+      if (routeSessionId) {
+        const applied = loadSessionById(routeSessionId, { updateRoute: false, notifyUser: true })
+        if (!applied) {
+          startNewConversation()
+          router.replace('/feature')
+        }
       } else {
-        startNewConversation()
+        // 从localStorage加载历史记录
+        loadHistoriesFromStorage()
+        const storedChat = getStoredChatMessages()
+        // 只有当存在除欢迎语以外的历史消息时才询问是否恢复
+        if (storedChat.length > 1) {
+          showSessionChoice.value = true
+        } else {
+          startNewConversation()
+        }
       }
       if (currentColors.value && currentColors.value.length > 0) {
         selectedColor1.value = currentColors.value[0]
         selectedColor2.value = currentColors.value[1] || currentColors.value[0]
       }
-
-      // 加载历史会话
-      loadSessionsFromStorage()
     })
 
     return {
