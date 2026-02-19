@@ -34,51 +34,21 @@
                   <div v-if="message.type === 'text'">{{ message.content }}</div>
 
                   <template v-else-if="message.type === 'palette'">
-                    <div class="palette-summary">
-                      <div class="palette-title">
-                        <div class="palette-title-left">{{ message.payload.title || '已生成配色' }}</div>
-                        <div class="palette-title-right">详细信息请查看右侧面板</div>
-                      </div>
-                      <div class="palette-colors">
-                        <span v-for="(color, index) in message.payload.colors" :key="index" class="palette-chip clickable-chip"
-                          :style="{ backgroundColor: color }" :title="color"
-                          @click="handlePickColorFromChat(message.payload.colors, index)"></span>
-                      </div>
-                      <div class="palette-text">{{ message.payload.advice }}</div>
-                    </div>
+                    <ChatPaletteMessage
+                      :payload="message.payload"
+                      @pick-color="handlePickColorFromChat"
+                    />
                   </template>
 
                   <template v-else-if="message.type === 'contrast'">
-                    <div class="palette-summary">
-                      <div class="palette-title">对比度检查结果</div>
-                      <div class="palette-text">共检测 {{ message.payload.totalPairs ?? 1 }} 组颜色组合</div>
-                      <div class="palette-text">最低对比度：{{ (message.payload.minRatio ?? message.payload.ratio ?? 0).toFixed(2) }}:1（{{ message.payload.minLevel || message.payload.level || '未知' }}）</div>
-                      <div class="palette-text" v-if="message.payload.totalPairs">通过 WCAG AA（4.5:1）组合：{{ message.payload.passCount ?? 0 }}/{{ message.payload.totalPairs }}</div>
-                      <div class="colorblind-block" v-for="(item, idx) in (Array.isArray(message.payload.results) && message.payload.results.length > 0 ? message.payload.results : [{ color1: message.payload.color1, color2: message.payload.color2, ratio: message.payload.ratio, level: message.payload.level }])" :key="idx">
-                        <div class="contrast-preview">
-                          <span class="palette-chip" :style="{ backgroundColor: item.color1 }"></span>
-                          <span class="palette-chip" :style="{ backgroundColor: item.color2 }"></span>
-                        </div>
-                        <div class="palette-text">{{ item.color1 }} vs {{ item.color2 }}：{{ (item.ratio ?? 0).toFixed(2) }}:1（{{ item.level || '未知' }}）</div>
-                      </div>
-                    </div>
+                    <ChatContrastMessage :payload="message.payload" />
                   </template>
 
                   <template v-else-if="message.type === 'colorblind'">
-                    <div class="palette-summary">
-                      <div class="palette-title">色盲检查结果</div>
-                      <div class="colorblind-block" v-for="type in colorblindTypes" :key="type.key">
-                        <div class="palette-text">{{ type.name }}</div>
-                        <div class="palette-colors">
-                          <span v-for="(color, index) in message.payload[type.key]" :key="index"
-                            class="palette-chip" :style="{ backgroundColor: color }"></span>
-                        </div>
-                      </div>
-                      <div class="palette-text">
-                        {{ message.payload.isAccessible ? '✅ 配色对色盲友好' : '❌ 建议调整以改善色盲可访问性' }}
-                      </div>
-                      <div class="palette-text">改进建议：{{ message.payload.recommendations.join('；') }}</div>
-                    </div>
+                    <ChatColorblindMessage
+                      :payload="message.payload"
+                      :colorblind-types="colorblindTypes"
+                    />
                   </template>
                 </div>
               </div>
@@ -208,6 +178,9 @@ import { useFeatureLogic } from './featureLogic'
 import ColorDisplay from '../components/ColorDisplay.vue'
 import Notification from '../components/Notification.vue'
 import GlassButton from '../components/GlassButton.vue'
+import ChatPaletteMessage from '../components/ChatPaletteMessage.vue'
+import ChatContrastMessage from '../components/ChatContrastMessage.vue'
+import ChatColorblindMessage from '../components/ChatColorblindMessage.vue'
 import logo from '../assets/logo.png'
 
 export default {
@@ -215,7 +188,10 @@ export default {
   components: {
     ColorDisplay,
     Notification,
-    GlassButton
+    GlassButton,
+    ChatPaletteMessage,
+    ChatContrastMessage,
+    ChatColorblindMessage
   },
   data() {
     return {
@@ -479,16 +455,8 @@ export default {
   padding: 6px 6px 2px 0;
 }
 
-.chat-message {
-  display: flex;
-}
-
 .chat-message.user {
-  justify-content: flex-end;
-}
-
-.chat-message.assistant {
-  justify-content: flex-start;
+  margin-left: auto;
 }
 
 .chat-bubble {
@@ -503,6 +471,7 @@ export default {
 .chat-bubble.user {
   background: rgba(37, 99, 235, 0.12);
   border: 1px solid rgba(37, 99, 235, 0.2);
+  max-width: 100%;
 }
 
 .contrast-preview {
