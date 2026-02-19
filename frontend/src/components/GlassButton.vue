@@ -108,6 +108,24 @@ export default {
   transform: translateY(-1px);
 }
 
+.glass-button--chip {
+  background: rgba(255, 255, 255, 0.4);
+  color: #334155;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.glass-button--chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.6);
+  color: #1e293b;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
 .glass-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

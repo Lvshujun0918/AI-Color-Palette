@@ -100,7 +100,7 @@
 
     <template #actions>
       <GlassButton variant="secondary" class="action-btn" @click="close">取消</GlassButton>
-      <GlassButton variant="primary" class="action-btn" @click="confirm">确定</GlassButton>
+      <GlassButton class="action-btn" @click="confirm">确定</GlassButton>
     </template>
   </AppModal>
 </template>

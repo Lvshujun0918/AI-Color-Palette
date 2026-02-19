@@ -92,9 +92,9 @@
             </button>
             <div class="quick-actions-body" v-show="isQuickActionsOpen">
               <div class="action-row">
-                <button class="action-chip" @click="insertQuickInput('不满意，重新生成')">重新生成</button>
-                <button class="action-chip" @click="insertQuickInput('对比度检查')">对比度检查</button>
-                <button class="action-chip" @click="insertQuickInput('色盲检查')">色盲检查</button>
+                <GlassButton variant="chip" @click="insertQuickInput('不满意，重新生成')">重新生成</GlassButton>
+                <GlassButton variant="chip" @click="insertQuickInput('对比度检查')">对比度检查</GlassButton>
+                <GlassButton variant="chip" @click="insertQuickInput('色盲检查')">色盲检查</GlassButton>
               </div>
               <div class="selector-hint">输入“对比度检查”将自动检测当前全部颜色组合</div>
             </div>
@@ -145,8 +145,8 @@
         </template>
         <div class="modal-text">当前未保存的上下文可能会丢失，是否继续？</div>
         <template #actions>
-          <button class="session-btn secondary" @click="cancelStartNewConversation">取消</button>
-          <button class="session-btn primary" @click="proceedStartNewConversation">确认新建</button>
+          <GlassButton variant="secondary" @click="cancelStartNewConversation">取消</GlassButton>
+          <GlassButton variant="primary" @click="proceedStartNewConversation">确认新建</GlassButton>
         </template>
       </AppModal>
 
@@ -170,9 +170,9 @@
           </div>
         </div>
         <template #actions>
-          <button class="session-btn primary full-width" @click="confirmStartNewConversation">
+          <GlassButton variant="primary" custom-class="full-width" @click="confirmStartNewConversation">
             <span><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 512 512"><path fill="#ffffff" d="M459.94 53.25a16.06 16.06 0 0 0-23.22-.56L424.35 65a8 8 0 0 0 0 11.31l11.34 11.32a8 8 0 0 0 11.34 0l12.06-12c6.1-6.09 6.67-16.01.85-22.38M399.34 90L218.82 270.2a9 9 0 0 0-2.31 3.93L208.16 299a3.91 3.91 0 0 0 4.86 4.86l24.85-8.35a9 9 0 0 0 3.93-2.31L422 112.66a9 9 0 0 0 0-12.66l-9.95-10a9 9 0 0 0-12.71 0"/><path fill="#ffffff" d="M386.34 193.66L264.45 315.79A41.1 41.1 0 0 1 247.58 326l-25.9 8.67a35.92 35.92 0 0 1-44.33-44.33l8.67-25.9a41.1 41.1 0 0 1 10.19-16.87l122.13-121.91a8 8 0 0 0-5.65-13.66H104a56 56 0 0 0-56 56v240a56 56 0 0 0 56 56h240a56 56 0 0 0 56-56V199.31a8 8 0 0 0-13.66-5.65"/></svg></span> 开始新一轮配色
-          </button>
+          </GlassButton>
         </template>
       </AppModal>
     </div>
@@ -367,30 +367,6 @@ export default {
 .chat-header-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-}
-
-
-.session-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 9px 14px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.session-btn>span {
-  display: inline-flex;
-  align-items: center;
-}
-
-.session-btn.secondary {
-  background: rgba(226, 232, 240, 0.9);
-  color: #334155;
-}
-
-.session-btn.primary {
-  background: rgba(37, 99, 235, 0.9);
-  color: #fff;
 }
 
 .chat-messages {
@@ -600,22 +576,6 @@ export default {
   gap: 10px;
   align-items: center;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.action-chip {
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(255, 255, 255, 0.8);
-  color: #2d3748;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.action-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
 }
 
 .selector-row {
