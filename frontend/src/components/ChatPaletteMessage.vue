@@ -20,17 +20,23 @@
         ></span>
       </Tooltip>
     </div>
-    <div class="palette-text">{{ payload?.advice || '' }}</div>
+    <AdviceText
+      class="palette-text"
+      :text="payload?.advice || ''"
+      @hover-color="handleAdviceHover"
+    />
   </div>
 </template>
 
 <script>
 import Tooltip from './Tooltip.vue'
+import AdviceText from './AdviceText.vue'
 
 export default {
   name: 'ChatPaletteMessage',
   components: {
-    Tooltip
+    Tooltip,
+    AdviceText
   },
   props: {
     payload: {
@@ -42,12 +48,15 @@ export default {
       default: false
     }
   },
-  emits: ['pick-color'],
+  emits: ['pick-color', 'hover-color'],
   methods: {
     handlePickColor(color, index) {
       if (!this.isCurrentMessage) return
       if (!this.payload?.colors) return
       this.$emit('pick-color', this.payload.colors, index)
+    },
+    handleAdviceHover(color) {
+      this.$emit('hover-color', color)
     }
   }
 }

@@ -42,6 +42,7 @@
                       :payload="message.payload"
                       :isCurrentMessage="isLastPaletteMessage(index)"
                       @pick-color="handlePickColorFromChat"
+                      @hover-color="handleAdviceColorHover"
                     />
                   </template>
 
@@ -91,8 +92,17 @@
 
         <!-- 右侧：配色显示面板 -->
         <div class="panel panel-right glass-panel">
-          <ColorDisplay :colors="currentColors" :prompt="currentPrompt" :timestamp="currentTimestamp"
-            :advice="currentAdvice" @regenerate="handleRegenerate" @pick-color="handlePickColorFromDisplay" @select-color="handleSelectColorForAI" />
+          <ColorDisplay
+            :colors="currentColors"
+            :prompt="currentPrompt"
+            :timestamp="currentTimestamp"
+            :advice="currentAdvice"
+            :highlightedColor="hoveredAdviceColor"
+            @regenerate="handleRegenerate"
+            @pick-color="handlePickColorFromDisplay"
+            @select-color="handleSelectColorForAI"
+            @hover-color="handleAdviceColorHover"
+          />
         </div>
       </div>
 
@@ -174,6 +184,7 @@
 </template>
 
 <script>
+import { ref } from 'vue'
 import { useFeatureLogic } from './featureLogic'
 import ColorDisplay from '../components/ColorDisplay.vue'
 import Notification from '../components/Notification.vue'
@@ -206,6 +217,11 @@ export default {
   },
   setup() {
     const featureLogic = useFeatureLogic()
+    const hoveredAdviceColor = ref('')
+
+    const handleAdviceColorHover = (color) => {
+      hoveredAdviceColor.value = color || ''
+    }
     
     // 判断是否是最后一条palette消息
     const isLastPaletteMessage = (index) => {
@@ -221,7 +237,9 @@ export default {
     
     return {
       ...featureLogic,
-      isLastPaletteMessage
+      isLastPaletteMessage,
+      hoveredAdviceColor,
+      handleAdviceColorHover
     }
   }
 }

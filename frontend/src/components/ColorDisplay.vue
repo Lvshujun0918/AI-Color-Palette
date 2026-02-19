@@ -2,7 +2,12 @@
   <div class="color-display">
     <!-- 配色卡片网格 -->
     <div class="color-cards">
-      <div v-for="(color, index) in colors" :key="index" class="color-card glass-card">
+      <div
+        v-for="(color, index) in colors"
+        :key="index"
+        class="color-card glass-card"
+        :class="{ 'is-highlighted': isHighlightedColor(color) }"
+      >
         <div class="color-preview" :style="{ backgroundColor: color }"></div>
         <div class="color-info">
           <div class="color-code">{{ color }}</div>
@@ -37,7 +42,11 @@
       </div>
       <div class="info-item advice-item">
         <span class="label">使用建议:</span>
-        <span class="value advice-text">{{ advice || '暂无建议' }}</span>
+        <AdviceText
+          class="value advice-text"
+          :text="advice || '暂无建议'"
+          @hover-color="emitHoverColor"
+        />
       </div>
     </div>
 
@@ -54,14 +63,16 @@
 import { notify } from '../utils/notify'
 import GlassButton from './GlassButton.vue'
 import Tooltip from './Tooltip.vue'
+import AdviceText from './AdviceText.vue'
 
 export default {
   name: 'ColorDisplay',
   components: {
     GlassButton,
-    Tooltip
+    Tooltip,
+    AdviceText
   },
-  emits: ['regenerate', 'pick-color', 'select-color'],
+  emits: ['regenerate', 'pick-color', 'select-color', 'hover-color'],
   props: {
     colors: {
       type: Array,
@@ -78,6 +89,10 @@ export default {
     advice: {
       type: String,
       default: ''
+    },
+    highlightedColor: {
+      type: String,
+      default: ''
     }
   },
   methods: {
@@ -86,6 +101,16 @@ export default {
         },
         emitSelectColor(index) {
           this.$emit('select-color', index)
+        },
+        emitHoverColor(color) {
+          this.$emit('hover-color', color)
+        },
+        normalizeColor(color) {
+          return typeof color === 'string' ? color.trim().toLowerCase() : ''
+        },
+        isHighlightedColor(color) {
+          if (!this.highlightedColor) return false
+          return this.normalizeColor(color) === this.normalizeColor(this.highlightedColor)
         },
     copyToClipboard(color) {
       navigator.clipboard.writeText(color).then(() => {
@@ -205,6 +230,11 @@ export default {
 .color-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.color-card.is-highlighted {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6), 0 8px 18px rgba(59, 130, 246, 0.25);
+  transform: translateY(-2px);
 }
 
 .color-preview {
