@@ -67,7 +67,11 @@
               <textarea v-model="chatInput" class="input-textarea" placeholder="输入你的配色需求..."
                 @keydown.ctrl.enter="handleSendPrompt"></textarea>
               <div class="input-footer">
-                <div class="input-tip">示例：温暖秋色调 / 科技感蓝色 / 适合网页仪表盘</div>
+                <div class="action-row">
+                  <GlassButton variant="chip" @click="insertQuickInput('不满意，重新生成')">重新生成</GlassButton>
+                  <GlassButton variant="chip" @click="insertQuickInput('对比度检查')">对比度检查</GlassButton>
+                  <GlassButton variant="chip" @click="insertQuickInput('色盲检查')">色盲检查</GlassButton>
+                </div>
                 <GlassButton v-if="!loading" class="send-btn" :loading="loading" :disabled="chatInput.trim() === ''"
                   @click="handleSendPrompt">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none"><path d="m12.594 23.258l-.012.002l-.071.035l-.02.004l-.014-.004l-.071-.036q-.016-.004-.024.006l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.016-.018m.264-.113l-.014.002l-.184.093l-.01.01l-.003.011l.018.43l.005.012l.008.008l.201.092q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.003-.011l.018-.43l-.003-.012l-.01-.01z"/><path fill="#ffffff" d="M20.235 5.686c.432-1.195-.726-2.353-1.921-1.92L3.709 9.048c-1.199.434-1.344 2.07-.241 2.709l4.662 2.699l4.163-4.163a1 1 0 0 1 1.414 1.414L9.544 15.87l2.7 4.662c.638 1.103 2.274.957 2.708-.241z"/></g></svg>发送
@@ -85,20 +89,6 @@
         <div class="panel panel-right glass-panel">
           <ColorDisplay :colors="currentColors" :prompt="currentPrompt" :timestamp="currentTimestamp"
             :advice="currentAdvice" @regenerate="handleRegenerate" @pick-color="handlePickColorFromDisplay" @select-color="handleSelectColorForAI" />
-          <div class="quick-actions-panel" :class="{ collapsed: !isQuickActionsOpen }">
-            <button class="action-header" @click="toggleQuickActions">
-              <span>快捷指令</span>
-              <span class="toggle-icon">{{ isQuickActionsOpen ? '收起' : '展开' }}</span>
-            </button>
-            <div class="quick-actions-body" v-show="isQuickActionsOpen">
-              <div class="action-row">
-                <GlassButton variant="chip" @click="insertQuickInput('不满意，重新生成')">重新生成</GlassButton>
-                <GlassButton variant="chip" @click="insertQuickInput('对比度检查')">对比度检查</GlassButton>
-                <GlassButton variant="chip" @click="insertQuickInput('色盲检查')">色盲检查</GlassButton>
-              </div>
-              <div class="selector-hint">输入“对比度检查”将自动检测当前全部颜色组合</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -260,7 +250,7 @@ export default {
   display: flex;
   color: rgb(80, 76, 76);
   width: 100%;
-  height: 160px;
+  height: 100px;
   padding: 20px;
   text-align: left;
   flex-shrink: 0;
@@ -269,6 +259,9 @@ export default {
 }
 
 .header-text {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
   margin-left: 20px;
   text-align: left;
   flex: 1;
@@ -572,7 +565,7 @@ export default {
 }
 
 .action-row {
-  display: grid;
+  display: flex;
   gap: 10px;
   align-items: center;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -690,6 +683,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .input-tip {
@@ -707,24 +701,24 @@ export default {
   margin-left: 0;
   margin-right: 0;
   margin-left: 0;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-radius: 30px;
+  border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .logo-container:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .logo {
-  width: 96px;
-  height: 96px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
   transition: transform 0.5s ease, filter 0.5s ease;
