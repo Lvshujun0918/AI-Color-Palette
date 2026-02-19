@@ -40,6 +40,48 @@
         </div>
       </div>
 
+      <!-- HSL Sliders -->
+      <div class="hsl-sliders">
+        <div class="slider-row">
+          <label class="slider-label">H</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="360" 
+            v-model.number="hsl_h"
+            @input="handleHslChange"
+            class="hsl-slider hue-slider-bar"
+          >
+          <span class="slider-value">{{ Math.round(hsl_h) }}°</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">S</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            v-model.number="hsl_s"
+            @input="handleHslChange"
+            class="hsl-slider"
+            :style="{ background: saturationGradient }"
+          >
+          <span class="slider-value">{{ Math.round(hsl_s) }}%</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">L</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            v-model.number="hsl_l"
+            @input="handleHslChange"
+            class="hsl-slider"
+            :style="{ background: lightnessGradient }"
+          >
+          <span class="slider-value">{{ Math.round(hsl_l) }}%</span>
+        </div>
+      </div>
+
       <!-- Preview and Input -->
       <div class="controls">
         <div class="color-preview" :style="{ backgroundColor: localModelValue }"></div>
@@ -122,15 +164,93 @@ const hexToHsv = (hex) => {
   return { h: h * 360, s: s * 100, v: v * 100 };
 };
 
-// Initialize HSV from modelValue
+const hexToHsl = (hex) => {
+  let r = 0, g = 0, b = 0;
+  if (!hex) return { h: 0, s: 0, l: 50 };
+  
+  const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+  
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else if (cleanHex.length === 6) {
+    r = parseInt(cleanHex.substring(0, 2), 16);
+    g = parseInt(cleanHex.substring(2, 4), 16);
+    b = parseInt(cleanHex.substring(4, 6), 16);
+  } else {
+    return { h: 0, s: 0, l: 50 };
+  }
+  
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s, l = (max + min) / 2;
+  
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  
+  return { h: h * 360, s: s * 100, l: l * 100 };
+};
+
+const hslToHex = (h, s, l) => {
+  s /= 100;
+  l /= 100;
+  
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  
+  if (h >= 0 && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x; g = 0; b = c;
+  } else if (h >= 300 && h < 360) {
+    r = c; g = 0; b = x;
+  }
+  
+  const toHex = (val) => {
+    const hex = Math.round((val + m) * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+// Initialize HSV and HSL from modelValue
 const initialHsv = hexToHsv(props.modelValue);
+const initialHsl = hexToHsl(props.modelValue);
 
 // --- State ---
 const hue = ref(initialHsv.h);        // 0-360
 const saturation = ref(initialHsv.s); // 0-100 (HSV S)
 const value = ref(initialHsv.v);      // 0-100 (HSV V)
+const hsl_h = ref(initialHsl.h);      // 0-360
+const hsl_s = ref(initialHsl.s);      // 0-100
+const hsl_l = ref(initialHsl.l);      // 0-100
 const localModelValue = ref(props.modelValue);
 const hexInput = ref(props.modelValue);
+let updateFromHsl = false;
 
 // --- Refs ---
 const slArea = ref(null);
@@ -158,6 +278,14 @@ const hueCursorLeft = computed(() => {
   return (hue.value / 360) * 100;
 });
 
+const saturationGradient = computed(() => {
+  return `linear-gradient(to right, hsl(${hsl_h.value}, 0%, ${hsl_l.value}%), hsl(${hsl_h.value}, 100%, ${hsl_l.value}%))`;
+});
+
+const lightnessGradient = computed(() => {
+  return `linear-gradient(to right, hsl(${hsl_h.value}, ${hsl_s.value}%, 0%), hsl(${hsl_h.value}, ${hsl_s.value}%, 50%), hsl(${hsl_h.value}, ${hsl_s.value}%, 100%))`;
+});
+
 // --- Color Helpers ---
 const hsvToHex = (h, s, v) => {
   s /= 100;
@@ -175,7 +303,32 @@ const updateColor = () => {
   const hex = hsvToHex(hue.value, saturation.value, value.value);
   localModelValue.value = hex;
   hexInput.value = hex;
+  
+  // Update HSL values from HSV
+  if (!updateFromHsl) {
+    const hsl = hexToHsl(hex);
+    hsl_h.value = hsl.h;
+    hsl_s.value = hsl.s;
+    hsl_l.value = hsl.l;
+  }
+  
   emit('update:modelValue', hex);
+};
+
+const handleHslChange = () => {
+  updateFromHsl = true;
+  const hex = hslToHex(hsl_h.value, hsl_s.value, hsl_l.value);
+  localModelValue.value = hex;
+  hexInput.value = hex;
+  
+  // Update HSV values from HSL
+  const hsv = hexToHsv(hex);
+  hue.value = hsv.h;
+  saturation.value = hsv.s;
+  value.value = hsv.v;
+  
+  emit('update:modelValue', hex);
+  updateFromHsl = false;
 };
 
 // --- Drag Handlers ---
@@ -254,6 +407,10 @@ const handleHexInput = () => {
     hue.value = hsv.h;
     saturation.value = hsv.s;
     value.value = hsv.v;
+    const hsl = hexToHsl(val);
+    hsl_h.value = hsl.h;
+    hsl_s.value = hsl.s;
+    hsl_l.value = hsl.l;
     emit('update:modelValue', val);
   }
 };
@@ -272,6 +429,10 @@ watch(() => props.modelValue, (newVal) => {
     hue.value = hsv.h;
     saturation.value = hsv.s;
     value.value = hsv.v;
+    const hsl = hexToHsl(newVal);
+    hsl_h.value = hsl.h;
+    hsl_s.value = hsl.s;
+    hsl_l.value = hsl.l;
   }
 });
 
@@ -281,6 +442,10 @@ watch(() => props.visible, (newVal) => {
     hue.value = hsv.h;
     saturation.value = hsv.s;
     value.value = hsv.v;
+    const hsl = hexToHsl(props.modelValue);
+    hsl_h.value = hsl.h;
+    hsl_s.value = hsl.s;
+    hsl_l.value = hsl.l;
   }
 });
 
@@ -440,5 +605,74 @@ const confirm = () => {
 .action-btn.primary {
   background: #3182ce;
   color: white;
+}
+
+/* HSL Sliders */
+.hsl-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  min-width: 20px;
+}
+
+.hsl-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.hsl-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #3182ce;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hsl-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #3182ce;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hue-slider-bar {
+  background: linear-gradient(to right, 
+    #f00 0%, #ff0 17%, #0f0 33%, 
+    #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+}
+
+.slider-value {
+  font-size: 0.85rem;
+  color: #4a5568;
+  min-width: 45px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
 }
 </style>
