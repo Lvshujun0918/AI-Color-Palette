@@ -101,6 +101,17 @@
         </div>
       </div>
 
+      <!-- 手动可以调节颜色模态框 -->
+      <ColorPickerModal 
+        v-if="showColorPicker"
+        :visible="showColorPicker" 
+        :modelValue="editingColorValue" 
+        @update:visible="showColorPicker = $event"
+        @update:modelValue="editingColorValue = $event"
+        @confirm="handleColorPickerConfirm"
+        @close="showColorPicker = false"
+      />
+
       <!-- 历史记录面板 -->
       <AppModal :show="showHistoryPanel" variant="history" :close-on-overlay="false" @close="showHistoryPanel = false">
         <template #header>
@@ -175,6 +186,7 @@ import GlassButton from '../components/GlassButton.vue'
 import ChatPaletteMessage from '../components/ChatPaletteMessage.vue'
 import ChatContrastMessage from '../components/ChatContrastMessage.vue'
 import ChatColorblindMessage from '../components/ChatColorblindMessage.vue'
+import ColorPickerModal from '../components/ColorPickerModal.vue'
 import AppModal from '../components/AppModal.vue'
 import logo from '../assets/logo.png'
 
@@ -187,7 +199,8 @@ export default {
     AppModal,
     ChatPaletteMessage,
     ChatContrastMessage,
-    ChatColorblindMessage
+    ChatColorblindMessage,
+    ColorPickerModal
   },
   data() {
     return {

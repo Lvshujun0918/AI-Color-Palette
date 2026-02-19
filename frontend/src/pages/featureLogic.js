@@ -38,6 +38,9 @@ export function useFeatureLogic() {
   const loadingSingle = ref(false)
   const singleColorMode = ref(false)
   const isQuickActionsOpen = ref(true)
+  const showColorPicker = ref(false)
+  const editingColorIndex = ref(0)
+  const editingColorValue = ref('#000000')
   const colorblindTypes = COLORBLIND_TYPES
 
   const currentBackground = computed(() => {
@@ -124,6 +127,9 @@ export function useFeatureLogic() {
     singleColorBase,
     singleColorMode,
     isQuickActionsOpen,
+    showColorPicker,
+    editingColorIndex,
+    editingColorValue,
     saveHistoriesToStorage: storageApi.saveHistoriesToStorage,
     saveChatMessagesToStorage: storageApi.saveChatMessagesToStorage,
     persistSessions: storageApi.persistSessions,
@@ -254,6 +260,8 @@ export function useFeatureLogic() {
     loadingSingle,
     isQuickActionsOpen,
     colorblindTypes,
+    showColorPicker,
+    editingColorValue,
     handleGenerate: actionsApi.handleGenerate,
     handleRegenerate: actionsApi.handleRegenerate,
     handleSingleColorRegenerate: actionsApi.handleSingleColorRegenerate,
@@ -265,6 +273,7 @@ export function useFeatureLogic() {
     handleShowHistory: actionsApi.handleShowHistory,
     handleContrastCheck: actionsApi.handleContrastCheck,
     handleColorblindCheck: actionsApi.handleColorblindCheck,
+    handleColorPickerConfirm: actionsApi.handleColorPickerConfirm,
     formatTime: sessionApi.formatTime,
     handleLogoError,
     notify

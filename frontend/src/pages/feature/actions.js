@@ -34,6 +34,9 @@ export function createActionsApi(deps) {
     singleColorBase,
     singleColorMode,
     isQuickActionsOpen,
+    showColorPicker,
+    editingColorIndex,
+    editingColorValue,
     saveHistoriesToStorage,
     saveChatMessagesToStorage,
     persistSessions,
@@ -57,24 +60,39 @@ export function createActionsApi(deps) {
 
   const handlePickColorFromChat = (palette, index) => {
     if (!palette || palette.length === 0) return
-    if (palette.length !== 5) {
-      notify('该配色数量不完整，暂不支持单色微调', 'warning')
-      return
+    editingColorIndex.value = index
+    editingColorValue.value = palette[index]
+    showColorPicker.value = true
+  }
+
+  const handleColorPickerConfirm = (newColor) => {
+    const newColors = [...currentColors.value]
+    if (editingColorIndex.value >= 0 && editingColorIndex.value < newColors.length) {
+      newColors[editingColorIndex.value] = newColor
+      currentColors.value = newColors
+
+      // Add assistant message
+      chatMessages.value.push({
+        id: Date.now(),
+        role: 'assistant',
+        type: 'palette',
+        content: null,
+        payload: {
+          title: '手动调节',
+          colors: newColors,
+          // advice: `已手动将第 ${editingColorIndex.value + 1} 个颜色调整为 ${newColor}`
+          advice: '根据您的手动调节更新了配色。'
+        }
+      })
+      
+      saveChatMessagesToStorage()
+      persistSessions()
     }
-    singleColorBase.value = [...palette]
-    const target = palette[index]
-    singleColorHex.value = target
-    singleColorIndex.value = index
-    singleColorPrompt.value = `针对颜色 ${target} 重新设计一个替代色，保持整体风格一致`
-    chatInput.value = singleColorPrompt.value
-    singleColorMode.value = true
-    isQuickActionsOpen.value = true
-    notify(`已选中颜色 ${target} 进行单独调整，请输入调整提示词吧`, 'info')
+    showColorPicker.value = false
   }
 
   const handlePickColorFromDisplay = (index) => {
-    if (!currentColors.value || currentColors.value.length !== 5) {
-      notify('当前配色数量异常，无法选择单色重生成', 'warning')
+    if (!currentColors.value || currentColors.value.length === 0) {
       return
     }
     handlePickColorFromChat([...currentColors.value], index)
@@ -390,6 +408,7 @@ export function createActionsApi(deps) {
     addChatMessage,
     handlePickColorFromChat,
     handlePickColorFromDisplay,
+    handleColorPickerConfirm,
     handleGenerate,
     handleRegenerate,
     handleSingleColorRegenerate,
