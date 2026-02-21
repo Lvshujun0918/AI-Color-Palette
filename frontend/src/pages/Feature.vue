@@ -43,7 +43,7 @@
                       :isCurrentMessage="isLastPaletteMessage(index)"
                       @pick-color="handlePickColorFromChat"
                       @hover-color="handleAdviceColorHover"
-                      @restore="handleRestoreToMessage(index)"
+                      @restore="openRestoreConfirm(index)"
                     />
                   </template>
 
@@ -155,6 +155,17 @@
         </template>
       </AppModal>
 
+      <AppModal :show="showRestoreConfirm" variant="confirm" @close="cancelRestoreToMessage">
+        <template #header>
+          <h3 class="modal-title">确认还原？</h3>
+        </template>
+        <div class="modal-text">还原后将删除该节点之后的聊天记录，此操作不可撤销。</div>
+        <template #actions>
+          <GlassButton variant="secondary" @click="cancelRestoreToMessage">取消</GlassButton>
+          <GlassButton variant="primary" @click="confirmRestoreToMessage">确认还原</GlassButton>
+        </template>
+      </AppModal>
+
       <AppModal :show="showSessionChoice" variant="choice" :close-on-overlay="false">
         <template #header>
           <h3 class="modal-title">继续之前的创作</h3>
@@ -219,9 +230,28 @@ export default {
   setup() {
     const featureLogic = useFeatureLogic()
     const hoveredAdviceColor = ref('')
+    const showRestoreConfirm = ref(false)
+    const pendingRestoreIndex = ref(-1)
 
     const handleAdviceColorHover = (color) => {
       hoveredAdviceColor.value = color || ''
+    }
+
+    const openRestoreConfirm = (index) => {
+      pendingRestoreIndex.value = index
+      showRestoreConfirm.value = true
+    }
+
+    const cancelRestoreToMessage = () => {
+      showRestoreConfirm.value = false
+      pendingRestoreIndex.value = -1
+    }
+
+    const confirmRestoreToMessage = () => {
+      if (pendingRestoreIndex.value >= 0) {
+        featureLogic.handleRestoreToMessage(pendingRestoreIndex.value)
+      }
+      cancelRestoreToMessage()
     }
     
     // 判断是否是最后一条palette消息
@@ -240,7 +270,11 @@ export default {
       ...featureLogic,
       isLastPaletteMessage,
       hoveredAdviceColor,
-      handleAdviceColorHover
+      handleAdviceColorHover,
+      showRestoreConfirm,
+      openRestoreConfirm,
+      cancelRestoreToMessage,
+      confirmRestoreToMessage
     }
   }
 }
