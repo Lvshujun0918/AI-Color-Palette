@@ -43,6 +43,7 @@
                       :isCurrentMessage="isLastPaletteMessage(index)"
                       @pick-color="handlePickColorFromChat"
                       @hover-color="handleAdviceColorHover"
+                      @restore="handleRestoreToMessage(index)"
                     />
                   </template>
 

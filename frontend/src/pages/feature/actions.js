@@ -389,6 +389,27 @@ export function createActionsApi(deps) {
     })
   }
 
+  const handleRestoreToMessage = (messageIndex) => {
+    if (!Array.isArray(chatMessages.value) || messageIndex < 0 || messageIndex >= chatMessages.value.length) {
+      return
+    }
+
+    const targetMessage = chatMessages.value[messageIndex]
+    if (!targetMessage || targetMessage.type !== 'palette' || !targetMessage.payload?.colors) {
+      return
+    }
+
+    currentColors.value = [...targetMessage.payload.colors]
+    currentPrompt.value = targetMessage.payload.prompt || currentPrompt.value
+    currentAdvice.value = targetMessage.payload.advice || ''
+    currentTimestamp.value = Date.now()
+
+    chatMessages.value = chatMessages.value.slice(0, messageIndex + 1)
+    saveChatMessagesToStorage()
+    persistSessions()
+    notify('已还原到该配色节点', 'success')
+  }
+
   const handleSendPrompt = () => {
     const prompt = chatInput.value.trim()
     if (!prompt) return
@@ -438,6 +459,7 @@ export function createActionsApi(deps) {
     handleSendPrompt,
     handleShowHistory,
     handleContrastCheck,
-    handleColorblindCheck
+    handleColorblindCheck,
+    handleRestoreToMessage
   }
 }

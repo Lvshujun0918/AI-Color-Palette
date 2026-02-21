@@ -275,6 +275,7 @@ export function useFeatureLogic() {
     handleShowHistory: actionsApi.handleShowHistory,
     handleContrastCheck: actionsApi.handleContrastCheck,
     handleColorblindCheck: actionsApi.handleColorblindCheck,
+    handleRestoreToMessage: actionsApi.handleRestoreToMessage,
     handleColorPickerConfirm: actionsApi.handleColorPickerConfirm,
     formatTime: sessionApi.formatTime,
     handleLogoError,
