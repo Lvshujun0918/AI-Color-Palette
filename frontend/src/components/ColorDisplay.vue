@@ -28,6 +28,7 @@
           <div class="comparison-colors">
             <div class="prev-color-block" :style="{ backgroundColor: previousColors[index] }" :title="previousColors[index]"></div>
             <span class="arrow">→</span>
+            <div class="prev-color-block" :style="{ backgroundColor: colors[index] }" :title="previousColors[index]"></div>
             <div class="hsl-changes">
               <div class="hsl-item">
                 <span class="hsl-name">H</span>
