@@ -25,16 +25,30 @@
         </div>
         <!-- 对比差值显示 -->
         <div v-if="showComparison && previousColors.length > index" class="color-diff">
-          <span class="diff-label">相对上组:</span>
-          <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dH)">
-            H{{ formatDiff(getHSLDiff(color, previousColors[index]).dH) }}°
-          </span>
-          <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dS)">
-            S{{ formatDiff(getHSLDiff(color, previousColors[index]).dS) }}%
-          </span>
-          <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dL)">
-            L{{ formatDiff(getHSLDiff(color, previousColors[index]).dL) }}%
-          </span>
+          <div class="comparison-colors">
+            <div class="prev-color-block" :style="{ backgroundColor: previousColors[index] }" :title="previousColors[index]"></div>
+            <span class="arrow">→</span>
+            <div class="hsl-changes">
+              <div class="hsl-item">
+                <span class="hsl-name">H</span>
+                <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dH)">
+                  {{ formatDiff(getHSLDiff(color, previousColors[index]).dH) }}°
+                </span>
+              </div>
+              <div class="hsl-item">
+                <span class="hsl-name">S</span>
+                <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dS)">
+                  {{ formatDiff(getHSLDiff(color, previousColors[index]).dS) }}%
+                </span>
+              </div>
+              <div class="hsl-item">
+                <span class="hsl-name">L</span>
+                <span class="diff-value" :class="getDiffClass(getHSLDiff(color, previousColors[index]).dL)">
+                  {{ formatDiff(getHSLDiff(color, previousColors[index]).dL) }}%
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -254,7 +268,7 @@ export default {
 .color-cards {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .color-card {
@@ -302,13 +316,35 @@ export default {
 }
 
 .color-diff {
-  padding: 5px 10px 8px;
+  padding: 8px 10px;
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   font-size: 0.75rem;
   background: rgba(240, 240, 240, 0.5);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.comparison-colors {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prev-color-block {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: help;
+}
+
+.arrow {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: bold;
 }
 
 .diff-label {
@@ -317,27 +353,48 @@ export default {
   font-size: 0.7rem;
 }
 
+.hsl-changes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.hsl-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hsl-name {
+  font-weight: 700;
+  color: #555;
+  font-size: 0.7rem;
+  min-width: 12px;
+}
+
 .diff-value {
   font-family: 'Courier New', monospace;
   font-weight: 600;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 3px;
   font-size: 0.7rem;
+  white-space: nowrap;
 }
 
 .diff-positive {
   color: #16a34a;
-  background: rgba(22, 163, 74, 0.1);
+  background: rgba(22, 163, 74, 0.15);
 }
 
 .diff-negative {
   color: #dc2626;
-  background: rgba(220, 38, 38, 0.1);
+  background: rgba(220, 38, 38, 0.15);
 }
 
 .diff-zero {
   color: #6b7280;
-  background: rgba(107, 114, 128, 0.1);
+  background: rgba(107, 114, 128, 0.15);
 }
 
 .copy-btn {
